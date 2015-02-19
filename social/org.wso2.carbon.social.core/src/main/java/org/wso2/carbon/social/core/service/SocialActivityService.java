@@ -30,7 +30,7 @@ import java.util.List;
 
 public abstract class SocialActivityService {
 
-	public String publish(NativeObject activity) {
+	public String publish(JsonObject activity) {
 		return getActivityPublisher().publish(activity);
 	}
 

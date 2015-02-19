@@ -41,12 +41,13 @@ public class SQLActivity implements Activity {
 
 	@Override
 	public int getTimestamp() {
-		return 0;
+		return this.body.get("published").getAsInt();
 	}
 
 	@Override
 	public String getActorId() {
-		return null;
+		JsonObject actor = (JsonObject)this.body.get("actor");
+		return actor.get("id").getAsString();
 	}
 
 	@Override
@@ -69,12 +70,13 @@ public class SQLActivity implements Activity {
 
 	@Override
 	public String getObjectType() {
-		return null;
+		JsonObject object = (JsonObject) this.body.get("object");
+		return object.get("type").getAsString();
 	}
 
 	@Override
 	public String getVerb() {
-		return null;
+		return this.body.get("verb").getAsString();
 	}
 
 	@Override

@@ -43,15 +43,15 @@ import org.wso2.carbon.social.sql.SocialUtil;
 public class SQLActivityBrowser implements ActivityBrowser {
 	private static final Log log = LogFactory.getLog(SQLActivityBrowser.class);
 	public static final String PAGIN_SELECT_SQL = "SELECT * FROM "
-			+ Constants.SOCIAL_TABLE_NAME + " WHERE "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.TIMESTAMP
 			+ " < (SELECT " + Constants.TIMESTAMP + " FROM "
-			+ Constants.SOCIAL_TABLE_NAME + " WHERE " + Constants.ID_COLUMN
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE " + Constants.ID_COLUMN
 			+ " =?) ORDER BY " + Constants.TIMESTAMP + " DESC LIMIT ?";
 
 	public static final String INIT_SELECT_SQL = "SELECT * FROM "
-			+ Constants.SOCIAL_TABLE_NAME + " WHERE "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
 			+ Constants.TIMESTAMP + " DESC LIMIT ?";

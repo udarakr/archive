@@ -25,16 +25,11 @@ import java.sql.SQLException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.json.JSONException;
-import org.mozilla.javascript.NativeObject;
 import org.wso2.carbon.social.sql.Constants;
 import org.wso2.carbon.social.sql.SocialUtil;
 import org.wso2.carbon.social.core.Activity;
 import org.wso2.carbon.social.core.ActivityPublisher;
-import org.wso2.carbon.social.core.JSONUtil;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -42,125 +37,197 @@ public class SQLActivityPublisher extends ActivityPublisher {
 
 	private static Log log = LogFactory.getLog(SQLActivityPublisher.class);
 
-	public static final String INSERT_SQL = "INSERT INTO "
-			+ Constants.SOCIAL_TABLE_NAME + "(" + Constants.ID_COLUMN + ","
-			+ Constants.CONTEXT_ID_COLUMN + "," + Constants.BODY_COLUMN + ", "
-			+ Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.TIMESTAMP
-			+ ") VALUES(?, ?, ?, ?, ?)";
+	/*
+	 * public static final String INSERT_SQL = "INSERT INTO " +
+	 * Constants.SOCIAL_COMMENTS_TABLE_NAME + "(" + Constants.ID_COLUMN + "," +
+	 * Constants.CONTEXT_ID_COLUMN + "," + Constants.BODY_COLUMN + ", " +
+	 * Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.TIMESTAMP +
+	 * ") VALUES(?, ?, ?, ?, ?)";
+	 * 
+	 * public static final String INSERT_RATING_SQL = "INSERT INTO " +
+	 * Constants.SOCIAL_RATING_TABLE_NAME + "(" + Constants.ID_COLUMN + "," +
+	 * Constants.CONTEXT_ID_COLUMN + "," + Constants.BODY_COLUMN + ", " +
+	 * Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.RATING_COLUMN + ", " +
+	 * Constants.TIMESTAMP + ") VALUES(?, ?, ?, ?, ?, ?)";
+	 * 
+	 * public static final String SELECT_CACHE_SQL = "SELECT * FROM " +
+	 * Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " WHERE " +
+	 * Constants.CONTEXT_ID_COLUMN + "=?"; public static final String
+	 * UPDATE_CACHE_SQL = "UPDATE " + Constants.SOCIAL_RATING_CACHE_TABLE_NAME +
+	 * " SET " + Constants.RATING_TOTAL + "=?, " + Constants.RATING_COUNT +
+	 * "=? WHERE " + Constants.CONTEXT_ID_COLUMN + "=?"; public static final
+	 * String INSERT_CACHE_SQL = "INSERT INTO " +
+	 * Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " (" +
+	 * Constants.CONTEXT_ID_COLUMN + ", " + Constants.RATING_TOTAL + ", " +
+	 * Constants.RATING_COUNT + ") VALUES(?, ?, ?) ";
+	 * 
+	 * public static final String ACTIVITY_SELECT_SQL = "SELECT * FROM " +
+	 * Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE " + Constants.ID_COLUMN +
+	 * " =?"; public static final String ACTIVITY_UPDATE_SQL = "UPDATE " +
+	 * Constants.SOCIAL_COMMENTS_TABLE_NAME + " SET " + Constants.BODY_COLUMN +
+	 * "=? WHERE " + Constants.ID_COLUMN + "=?";
+	 * 
+	 * public static final String INSERT_LIKE_SQL = "INSERT INTO " +
+	 * Constants.SOCIAL_LIKES_TABLE_NAME + "(" + Constants.ID_COLUMN + "," +
+	 * Constants.CONTEXT_ID_COLUMN + "," + Constants.BODY_COLUMN + ", " +
+	 * Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.LIKES_COLUMN + "," +
+	 * Constants.UNLIKES_COLUMN + "," + Constants.TIMESTAMP +
+	 * ") VALUES(?, ?, ?, ?, ?, ?, ?)";
+	 * 
+	 * public static final String LIKES_UPDATE_SQL = "UPDATE " +
+	 * Constants.SOCIAL_LIKES_TABLE_NAME + " SET " + Constants.BODY_COLUMN +
+	 * " =?, " + Constants.LIKES_COLUMN + " =?, " + Constants.UNLIKES_COLUMN +
+	 * " =? WHERE " + Constants.ID_COLUMN + " =?"; // This will be used to
+	 * update body content when there are like/unlike // activities on the
+	 * comment target public static final String UPDATE_RATING_SQL = "UPDATE " +
+	 * Constants.SOCIAL_RATING_TABLE_NAME + " SET " + Constants.BODY_COLUMN +
+	 * " =? where " + Constants.ID_COLUMN + " =?";
+	 * 
+	 * public static final String DELETE_COMMENT_SQL = "DELETE FROM " +
+	 * Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE " + Constants.ID_COLUMN +
+	 * " =?"; public static final String DELETE_RATING_SQL = "DELETE FROM " +
+	 * Constants.SOCIAL_RATING_TABLE_NAME + " WHERE " + Constants.ID_COLUMN +
+	 * " =?"; public static final String DELETE_LIKES_SQL = "DELETE FROM " +
+	 * Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE " + Constants.ID_COLUMN +
+	 * " =?";
+	 */
+	public static final String ErrorStr = "Failed to publish the social event.";
 
-	public static final String INSERT_RATING_SQL = "INSERT INTO "
+	private static final String INSERT_COMMENT_SQL = "INSERT INTO "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + "(" + Constants.ID_COLUMN
+			+ "," + Constants.BODY_COLUMN + "," + Constants.CONTEXT_ID_COLUMN
+			+ "," + Constants.USER_COLUMN + ","
+			+ Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.LIKES_COLUMN
+			+ ", " + Constants.UNLIKES_COLUMN + " " + Constants.TIMESTAMP
+			+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+
+	private static final String INSERT_RATING_SQL = "INSERT INTO "
 			+ Constants.SOCIAL_RATING_TABLE_NAME + "(" + Constants.ID_COLUMN
-			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.BODY_COLUMN
+			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.USER_COLUMN
 			+ ", " + Constants.TENANT_DOMAIN_COLUMN + ", "
 			+ Constants.RATING_COLUMN + ", " + Constants.TIMESTAMP
 			+ ") VALUES(?, ?, ?, ?, ?, ?)";
 
-	public static final String SELECT_CACHE_SQL = "SELECT * FROM "
+	private static final String INSERT_LIKE_SQL = "INSERT INTO "
+			+ Constants.SOCIAL_LIKES_TABLE_NAME + "(" + Constants.ID_COLUMN
+			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.USER_COLUMN
+			+ ", " + Constants.TENANT_DOMAIN_COLUMN + ", "
+			+ Constants.LIKES_COLUMN + "," + Constants.TIMESTAMP
+			+ ") VALUES(?, ?, ?, ?, ?, ?)";
+
+	private static final String DELETE_LIKE_ACTIVITY = "DELETE FROM "
+			+ Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE "
+			+ Constants.CONTEXT_ID_COLUMN + " =? AND " + Constants.USER_COLUMN
+			+ " =?";
+
+	private static final String COMMENT_ACTIVITY_SELECT_FOR_UPDATE_SQL = "BEGIN SELECT "
+			+ Constants.BODY_COLUMN
+			+ " FROM "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME
+			+ " WHERE "
+			+ Constants.ID_COLUMN + " =? FOR UPDATE";
+
+	public static final String COMMENT_ACTIVITY_SELECT_SQL = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
+			+ Constants.ID_COLUMN + " =?";
+
+	private static final String COMMENT_ACTIVITY_UPDATE_SQL = "UPDATE "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " SET "
+			+ Constants.BODY_COLUMN + "=?, " + Constants.LIKES_COLUMN + "=?, "
+			+ Constants.UNLIKES_COLUMN + "=? WHERE " + Constants.ID_COLUMN
+			+ " =? END";
+
+	public static final String SELECT_CACHE_SQL = "BEGIN SELECT "
+			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " WHERE "
-			+ Constants.CONTEXT_ID_COLUMN + "=?";
+			+ Constants.CONTEXT_ID_COLUMN + "=? FOR UPDATE";
+
 	public static final String UPDATE_CACHE_SQL = "UPDATE "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " SET "
 			+ Constants.RATING_TOTAL + "=?, " + Constants.RATING_COUNT
-			+ "=? WHERE " + Constants.CONTEXT_ID_COLUMN + "=?";
+			+ "=? WHERE " + Constants.CONTEXT_ID_COLUMN + "=? END";
+
 	public static final String INSERT_CACHE_SQL = "INSERT INTO "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " ("
 			+ Constants.CONTEXT_ID_COLUMN + ", " + Constants.RATING_TOTAL
-			+ ", " + Constants.RATING_COUNT + ") VALUES(?, ?, ?) ";
-
-	public static final String ACTIVITY_SELECT_SQL = "SELECT * FROM "
-			+ Constants.SOCIAL_TABLE_NAME + " WHERE " + Constants.ID_COLUMN
-			+ " =?";
-	public static final String ACTIVITY_UPDATE_SQL = "UPDATE "
-			+ Constants.SOCIAL_TABLE_NAME + " SET " + Constants.BODY_COLUMN
-			+ "=? WHERE " + Constants.ID_COLUMN + "=?";
-
-	public static final String INSERT_LIKE_SQL = "INSERT INTO "
-			+ Constants.SOCIAL_LIKES_TABLE_NAME + "(" + Constants.ID_COLUMN
-			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.BODY_COLUMN
-			+ ", " + Constants.TENANT_DOMAIN_COLUMN + ", "
-			+ Constants.LIKES_COLUMN + "," + Constants.UNLIKES_COLUMN + ","
-			+ Constants.TIMESTAMP + ") VALUES(?, ?, ?, ?, ?, ?, ?)";
-
-	public static final String LIKES_UPDATE_SQL = "UPDATE "
-			+ Constants.SOCIAL_LIKES_TABLE_NAME + " SET "
-			+ Constants.BODY_COLUMN + " =?, " + Constants.LIKES_COLUMN
-			+ " =?, " + Constants.UNLIKES_COLUMN + " =? WHERE "
-			+ Constants.ID_COLUMN + " =?";
-	// This will be used to update body content when there are like/unlike
-	// activities on the comment target
-	public static final String UPDATE_RATING_SQL = "UPDATE "
-			+ Constants.SOCIAL_RATING_TABLE_NAME + " SET "
-			+ Constants.BODY_COLUMN + " =? where " + Constants.ID_COLUMN
-			+ " =?";
+			+ ", " + Constants.RATING_COUNT + ") VALUES(?, ?, ?) END";
 
 	public static final String DELETE_COMMENT_SQL = "DELETE FROM "
-			+ Constants.SOCIAL_TABLE_NAME + " WHERE " + Constants.ID_COLUMN
-			+ " =?";
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
+			+ Constants.ID_COLUMN + " =?";
+
 	public static final String DELETE_RATING_SQL = "DELETE FROM "
 			+ Constants.SOCIAL_RATING_TABLE_NAME + " WHERE "
 			+ Constants.ID_COLUMN + " =?";
+
 	public static final String DELETE_LIKES_SQL = "DELETE FROM "
 			+ Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE "
-			+ Constants.ID_COLUMN + " =?";
-
-	public static final String ErrorStr = "Failed to publish the social event.";
+			+ Constants.CONTEXT_ID_COLUMN + " =?";
 
 	private JsonParser parser = new JsonParser();
 
 	@Override
-	protected String publish(String id, NativeObject activity) {
-		DSConnection con = new DSConnection();
-		Connection connection = con.getConnection();
-		int commentRet = 0;
+	protected String publishActivity(JsonObject activity) {
+		SQLActivity act = new SQLActivity(activity);
 
-		if (connection == null) {
-			return null;
-		}
+		// TODO use review as the verb insted of post
+		if ("post".equals(act.getVerb())) {
 
-		PreparedStatement commentStatement;
-		PreparedStatement ratingStatement;
+			PreparedStatement commentStatement;
+			PreparedStatement ratingStatement;
 
-		String json = null;
-		try {
-			json = JSONUtil.SimpleNativeObjectToJson(activity);
+			String json = null;
 
-			String targetId = JSONUtil.getNullableProperty(activity,
-					Constants.CONTEXT_JSON_PROP, Constants.ID_JSON_PROP);
-			if (targetId == null) {
-				targetId = JSONUtil.getProperty(activity,
-						Constants.TARGET_JSON_PROP, Constants.ID_JSON_PROP);
-			}
-
-			String timeStamp = JSONUtil.getProperty(activity,
-					Constants.TIMESTAMP);
+			json = activity.getAsString();
+			String targetId = act.getTargetId();
+			String id = act.getId();
+			String userId = act.getActorId();
+			int timeStamp = act.getTimestamp();
 			String tenantDomain = SocialUtil.getTenantDomain();
 
-			if ("post".equals(SocialUtil.getVerb(activity))) {
+			DSConnection con = new DSConnection();
+			Connection connection = con.getConnection();
+			int commentRet = 0;
+
+			if (connection == null) {
+				return null;
+			}
+
+			int totalLikes = act.getLikeCount();
+			int totalUnlikes = act.getDislikeCount();
+			int rating = act.getRating();
+
+			try {
 				connection.setAutoCommit(false);
-				commentStatement = connection.prepareStatement(INSERT_SQL);
+				// INSERT_SQL INSERT INTO SOCIAL_COMMENTS
+				// (id,payload_context_id,body,user_id,tenant_domain,likes,unlikes,
+				// timestamp) VALUES ();
+
+				commentStatement = connection
+						.prepareStatement(INSERT_COMMENT_SQL);
 				commentStatement.setString(1, id);
 				commentStatement.setString(2, targetId);
 				commentStatement.setString(3, json);
-				commentStatement.setString(4, tenantDomain);
-				commentStatement.setString(5, timeStamp);
+				commentStatement.setString(4, userId);
+				commentStatement.setString(5, tenantDomain);
+				commentStatement.setInt(6, totalLikes);
+				commentStatement.setInt(7, totalUnlikes);
+				commentStatement.setInt(8, timeStamp);
 				commentRet = commentStatement.executeUpdate();
 
-				insertToLikes(id, targetId, json, tenantDomain, timeStamp,
-						connection);
-
-				if (SocialUtil.isValidRating(activity)) {
-					int rating = Integer.parseInt(JSONUtil.getProperty(
-							activity, Constants.OBJECT_JSON_PROP,
-							Constants.RATING));
-
+				// handle rating activity which comes inside the review
+				if (rating > 0) {
+					// INSERT INTO SOCIAL_RATING
+					// (id,target_id,user_id,tenant_domain,rating_value,timestamp)
 					ratingStatement = connection
 							.prepareStatement(INSERT_RATING_SQL);
 					ratingStatement.setString(1, id);
 					ratingStatement.setString(2, targetId);
-					ratingStatement.setString(3, json);
+					ratingStatement.setString(3, userId);
 					ratingStatement.setString(4, tenantDomain);
 					ratingStatement.setInt(5, rating);
-					ratingStatement.setString(6, timeStamp);
+					ratingStatement.setInt(6, timeStamp);
 					ratingStatement.executeUpdate();
 
 					updateRatingCache(connection, targetId, rating);
@@ -182,202 +249,212 @@ public class SQLActivityPublisher extends ActivityPublisher {
 								+ " TargetID: " + targetId + " JSON: " + json);
 					}
 				}
-			} else {
-				// Handle like,dislike,unlike,undislike verbs
-				publishLikes(connection, activity);
+			} catch (SQLException e) {
+				log.error(ErrorStr + e);
+			} finally {
+				if (con != null) {
+					con.closeConnection(connection);
+				}
 			}
-
-		} catch (SQLException e) {
-			log.error(ErrorStr + e);
-		} catch (JSONException e) {
-			log.error("Unable to retrieve the JSON activity. " + e);
-		} finally {
-			if (con != null) {
-				con.closeConnection(connection);
-			}
+		} else {
+			// Handle like,dislike,unlike,undislike verbs
+			publishLikes(act);
 		}
 
 		return null;
 	}
 
 	/**
-	 * Add init like activity when there is a comment activity occurred.
+	 * publish like/dislike activity
 	 * 
-	 * @param id
-	 * @param targetId
-	 * @param json
-	 * @param tenantDomain
-	 * @param timeStamp
-	 * @param connection
-	 */
-	private void insertToLikes(String id, String targetId, String json,
-			String tenantDomain, String timeStamp, Connection connection) {
-		PreparedStatement insertStatement;
-
-		try {
-			insertStatement = connection.prepareStatement(INSERT_LIKE_SQL);
-			insertStatement.setString(1, id);
-			insertStatement.setString(2, targetId);
-			insertStatement.setString(3, json);
-			insertStatement.setString(4, tenantDomain);
-			insertStatement.setInt(5, 0);
-			insertStatement.setInt(6, 0);
-			insertStatement.setString(7, timeStamp);
-			insertStatement.executeUpdate();
-		} catch (SQLException e) {
-			log.error("Failed to add activity in to the table: "
-					+ Constants.SOCIAL_LIKES_TABLE_NAME + ". " + e);
-		}
-
-	}
-
-	/**
-	 * publish like/dislike activity and update all tables accordingly. We need
-	 * to update like/unlike count within body object resides in all tables.
-	 * 
-	 * @param connection
 	 * @param activity
+	 * @return
 	 */
-	private void publishLikes(Connection connection, NativeObject activity) {
+	private void publishLikes(SQLActivity activity) {
 		DSConnection con = new DSConnection();
-		Connection selectConnection = con.getConnection();
-
-		ResultSet resultSet;
-
-		String targetId = JSONUtil.getProperty(activity,
-				Constants.TARGET_JSON_PROP, Constants.ID_JSON_PROP);
-		String actor = JSONUtil.getProperty(activity,
-				Constants.ACTOR_JSON_PROP, Constants.ID_JSON_PROP);
-
-		PreparedStatement selectActivityStatement;
-		PreparedStatement updateActivityStatement;
+		Connection connection = con.getConnection();
 
 		try {
-			selectActivityStatement = selectConnection
-					.prepareStatement(ACTIVITY_SELECT_SQL);
-			selectActivityStatement.setString(1, targetId);
-			resultSet = selectActivityStatement.executeQuery();
+			connection.setAutoCommit(false);
 
-			if (resultSet.next()) {
+			String verb = activity.getVerb();
+			int likeValue;
 
-				JsonObject currentBody = (JsonObject) parser.parse(resultSet
-						.getString(Constants.BODY_COLUMN));
+			String targetId = activity.getTargetId();
+			ResultSet commentResultSet = getCommentResultSet(targetId);
 
-				JsonElement actorElement = (JsonElement) parser.parse(actor);
+			if (commentResultSet.next()) {
 
+				JsonObject currentBody = (JsonObject) parser
+						.parse(commentResultSet
+								.getString(Constants.BODY_COLUMN));
 				Activity currentActivity = new SQLActivity(currentBody);
+				PreparedStatement updateActivityStatement;
+
 				int likeCount = currentActivity.getLikeCount();
 				int dislikeCount = currentActivity.getDislikeCount();
-				String id = currentActivity.getId();
-
-				String verb = SocialUtil.getVerb(activity);
 
 				switch (Constants.VERB.valueOf(verb)) {
 				case like:
 					likeCount += 1;
-					JsonObject likesObj = (JsonObject) currentBody.get("likes");
-					JsonArray likes = (JsonArray) likesObj.get("items")
-							.getAsJsonArray();
-					likes.add(actorElement);
+					likeValue = 1;
+					insertLikeActivity(activity, likeValue, connection);
 					break;
 				case unlike:
-					likeCount -= 1;
-					JsonObject uLikesObj = (JsonObject) currentBody
-							.get("likes");
-					JsonArray uLikes = (JsonArray) uLikesObj.get("items")
-							.getAsJsonArray();
-					// uLikes.remove(actorElement);
+					dislikeCount += 1;
+					likeValue = 0;
+					insertLikeActivity(activity, likeValue, connection);
 					break;
 				case dislike:
-					dislikeCount += 1;
-					JsonObject disLikesObj = (JsonObject) currentBody
-							.get("dislikes");
-					JsonArray disLikes = (JsonArray) disLikesObj.get("items")
-							.getAsJsonArray();
-					disLikes.add(actorElement);
+					likeCount -= 1;
+					removeLikeActivity(activity, connection);
 					break;
-				case undislike:
+				case disunlike:
 					dislikeCount -= 1;
-					JsonObject unDisLikesObj = (JsonObject) currentBody
-							.get("dislikes");
-					JsonArray unDisLikes = (JsonArray) unDisLikesObj.get(
-							"items").getAsJsonArray();
-					// unDisLikes.remove(actorElement);
+					removeLikeActivity(activity, connection);
 					break;
 				default:
-					// TODO Add a proper debug log
+					log.warn("Provided verb: " + verb
+							+ " not supported by the social framework.");
 					break;
 				}
+
 				currentActivity.setLikeCount(likeCount);
 				currentActivity.setDislikeCount(dislikeCount);
 
 				JsonObject json = currentActivity.getBody();
-
-				connection.setAutoCommit(false);
+				// UPDATE SOCIAL_COMMENTS SET body=?, likes=?, dislikes=? WHERE
+				// id=?;
 				updateActivityStatement = connection
-						.prepareStatement(ACTIVITY_UPDATE_SQL);
+						.prepareStatement(COMMENT_ACTIVITY_UPDATE_SQL);
 
 				updateActivityStatement.setString(1, json.toString());
+				updateActivityStatement.setInt(2, likeCount);
+				updateActivityStatement.setInt(3, dislikeCount);
 				updateActivityStatement.setString(2, targetId);
 				updateActivityStatement.executeUpdate();
-
-				updateLikes(targetId, likeCount, dislikeCount, json, connection);
-				updateRating(id, json, connection);
-
 				connection.commit();
 			}
 		} catch (SQLException e) {
-			log.error("Error while publishing like/unlike activity. " + e);
-		}
-	}
-
-	/**
-	 * Update like/unlike count within the body object of the ratings table.
-	 * 
-	 * @param parentId
-	 * @param json
-	 * @param connection
-	 */
-	private void updateRating(String id, JsonObject json, Connection connection) {
-		PreparedStatement updateRatingStatement;
-
-		try {
-			updateRatingStatement = connection
-					.prepareStatement(UPDATE_RATING_SQL);
-			updateRatingStatement.setString(1, json.toString());
-			updateRatingStatement.setString(2, id);
-			updateRatingStatement.executeUpdate();
-		} catch (SQLException e) {
-			log.error("Error while updating like/unlike activity in table: "
-					+ Constants.SOCIAL_RATING_TABLE_NAME + ". " + e);
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 
 	}
 
-	/**
-	 * Update like/unlike count within body object and update likes/dislikes
-	 * columns accordingly.
-	 * 
-	 * @param targetId
-	 * @param likeCount
-	 * @param dislikeCount
-	 * @param json
-	 * @param connection
-	 */
-	private void updateLikes(String targetId, int likeCount, int dislikeCount,
-			JsonObject json, Connection connection) {
-		PreparedStatement updateActivityStatement;
+	private ResultSet getCommentResultSet(String targetId) {
+		DSConnection con = new DSConnection();
+		Connection selectConnection = con.getConnection();
+		PreparedStatement selectActivityStatement;
+		ResultSet resultSet;
+
 		try {
-			updateActivityStatement = connection
-					.prepareStatement(LIKES_UPDATE_SQL);
-			updateActivityStatement.setString(1, json.toString());
-			updateActivityStatement.setInt(2, likeCount);
-			updateActivityStatement.setInt(3, dislikeCount);
-			updateActivityStatement.setString(4, targetId);
-			updateActivityStatement.executeUpdate();
+			selectActivityStatement = selectConnection
+					.prepareStatement(COMMENT_ACTIVITY_SELECT_FOR_UPDATE_SQL);
+			selectActivityStatement.setString(1, targetId);
+			resultSet = selectActivityStatement.executeQuery();
+			return resultSet;
 		} catch (SQLException e) {
-			log.error("Unable to update the table: "
-					+ Constants.SOCIAL_LIKES_TABLE_NAME + ". " + e);
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			con.closeConnection(selectConnection);
+		}
+		return null;
+	}
+
+	/*
+	 * private void updateSocialCommentLikes(SQLActivity activity, Connection
+	 * connection) { DSConnection con = new DSConnection(); Connection
+	 * selectConnection = con.getConnection();
+	 * 
+	 * PreparedStatement selectActivityStatement; PreparedStatement
+	 * updateActivityStatement; String targetId = activity.getTargetId();
+	 * ResultSet resultSet;
+	 * 
+	 * try { // select relevant comment activity to update(transaction)
+	 * selectActivityStatement = selectConnection
+	 * .prepareStatement(COMMENT_ACTIVITY_SELECT_SQL);
+	 * selectActivityStatement.setString(1, targetId); resultSet =
+	 * selectActivityStatement.executeQuery();
+	 * 
+	 * if (resultSet.next()) {
+	 * 
+	 * JsonObject currentBody = (JsonObject) parser.parse(resultSet
+	 * .getString(Constants.BODY_COLUMN)); Activity currentActivity = new
+	 * SQLActivity(currentBody);
+	 * 
+	 * int likeCount = currentActivity.getLikeCount(); int dislikeCount =
+	 * currentActivity.getDislikeCount();
+	 * 
+	 * String verb = activity.getVerb();
+	 * 
+	 * switch (Constants.VERB.valueOf(verb)) { case like: likeCount += 1; break;
+	 * case unlike: dislikeCount += 1; break; case dislike: likeCount -= 1;
+	 * break; case disunlike: dislikeCount -= 1; break; default:
+	 * log.warn("Provided verb: " + verb +
+	 * " not supported by the social framework."); break; }
+	 * 
+	 * currentActivity.setLikeCount(likeCount);
+	 * currentActivity.setDislikeCount(dislikeCount);
+	 * 
+	 * JsonObject json = currentActivity.getBody(); // UPDATE SOCIAL_COMMENTS
+	 * SET body=?, likes=?, dislikes=? WHERE // id=?; updateActivityStatement =
+	 * connection .prepareStatement(COMMENT_ACTIVITY_UPDATE_SQL);
+	 * 
+	 * updateActivityStatement.setString(1, json.toString());
+	 * updateActivityStatement.setInt(2, likeCount);
+	 * updateActivityStatement.setInt(3, dislikeCount);
+	 * updateActivityStatement.setString(2, targetId);
+	 * updateActivityStatement.executeUpdate(); } } catch (SQLException e) {
+	 * log.error("Error while updating table: " +
+	 * Constants.SOCIAL_COMMENTS_TABLE_NAME + e); } finally {
+	 * con.closeConnection(connection); }
+	 * 
+	 * }
+	 */
+
+	private void removeLikeActivity(SQLActivity activity, Connection connection) {
+		PreparedStatement deleteActivityStatement;
+		String targetId = activity.getTargetId();
+		String actor = activity.getActorId();
+
+		try {
+			// DELETE FROM SOCIAL_LIKES WHERE payload_context_id=? AND
+			// user_id=?;
+			deleteActivityStatement = connection
+					.prepareStatement(DELETE_LIKE_ACTIVITY);
+			deleteActivityStatement.setString(1, targetId);
+			deleteActivityStatement.setString(2, actor);
+			deleteActivityStatement.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error while removing like activity from the table: "
+					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
+		}
+	}
+
+	private void insertLikeActivity(SQLActivity activity, int likeValue,
+			Connection connection) {
+		PreparedStatement insertActivityStatement;
+		String targetId = activity.getTargetId();
+		String actor = activity.getActorId();
+		int timestamp = activity.getTimestamp();
+		String id = activity.getId();
+		String tenantDomain = SocialUtil.getTenantDomain();
+
+		try {
+			// INSERT LIKE activity to LIKES TABLE
+			insertActivityStatement = connection
+					.prepareStatement(INSERT_LIKE_SQL);
+			insertActivityStatement.setString(1, id);
+			insertActivityStatement.setString(2, targetId);
+			insertActivityStatement.setString(3, actor);
+			insertActivityStatement.setString(4, tenantDomain);
+			insertActivityStatement.setInt(5, likeValue);
+			insertActivityStatement.setInt(6, timestamp);
+		} catch (SQLException e) {
+			log.error("Error while adding like activity to the table: "
+					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
 		}
 
 	}
@@ -485,7 +562,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		PreparedStatement selectStatement;
 
 		try {
-			selectStatement = connection.prepareStatement(ACTIVITY_SELECT_SQL);
+			selectStatement = connection.prepareStatement(COMMENT_ACTIVITY_SELECT_SQL);
 			selectStatement.setString(1, activityId);
 			resultSet = selectStatement.executeQuery();
 
