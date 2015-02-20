@@ -20,11 +20,7 @@ package org.wso2.carbon.social.sql;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.mozilla.javascript.NativeObject;
 import org.wso2.carbon.context.CarbonContext;
-import org.wso2.carbon.social.core.JSONUtil;
-
-import com.google.gson.JsonObject;
 
 public class SocialUtil {
 	private static final Log log = LogFactory.getLog(SocialUtil.class);
@@ -57,30 +53,5 @@ public class SocialUtil {
 			return null;
 		}
 	}
-
-	public static boolean isValidRating(NativeObject activity) {
-		int rating = Integer.parseInt(JSONUtil.getProperty(activity,
-				Constants.OBJECT_JSON_PROP, Constants.RATING));
-		if (rating > 0) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	public static String getVerb(NativeObject activity) {
-
-		return JSONUtil.getProperty(activity, Constants.VERB_JSON_PROP);
-
-	}
-	
-	public static boolean isValidlike(NativeObject activity){
-		return false;
-	}
-
-	public static String updateLikeItems(String actor, JsonObject currentBody) {
-		// TODO Auto-generated method stub
-		return null;
-	} 
 
 }

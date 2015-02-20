@@ -42,28 +42,36 @@ import org.wso2.carbon.social.sql.SocialUtil;
 
 public class SQLActivityBrowser implements ActivityBrowser {
 	private static final Log log = LogFactory.getLog(SQLActivityBrowser.class);
-	public static final String PAGIN_SELECT_SQL = "SELECT * FROM "
+	public static final String PAGIN_SELECT_SQL = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.TIMESTAMP
 			+ " < (SELECT " + Constants.TIMESTAMP + " FROM "
-			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE " + Constants.ID_COLUMN
-			+ " =?) ORDER BY " + Constants.TIMESTAMP + " DESC LIMIT ?";
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
+			+ Constants.ID_COLUMN + " =?) ORDER BY " + Constants.TIMESTAMP
+			+ " DESC LIMIT ?";
 
-	public static final String INIT_SELECT_SQL = "SELECT * FROM "
+	public static final String INIT_SELECT_SQL = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
 			+ Constants.TIMESTAMP + " DESC LIMIT ?";
 
-	public static final String SELECT_CACHE_SQL = "SELECT * FROM "
+	public static final String SELECT_CACHE_SQL = "SELECT "
+			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=?";
 
-	public static final String TOP_ASSETS_SELECT_SQL = "SELECT * FROM "
+	public static final String TOP_ASSETS_SELECT_SQL = "SELECT "
+			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + ","
+			+ Constants.CONTEXT_ID_COLUMN + "  FROM "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME;
-	public static final String TOP_COMMENTS_SELECT_SQL = "SELECT * FROM "
-			+ Constants.SOCIAL_LIKES_TABLE_NAME + "WHERE "
+
+	public static final String TOP_COMMENTS_SELECT_SQL = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + "WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + " =? AND " + Constants.LIKES_COLUMN
 			+ " >?";
 
@@ -75,6 +83,9 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		Connection connection = con.getConnection();
 
 		if (connection == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(Constants.CONNECTION_ERROR);
+			}
 			return 0;
 		}
 
@@ -130,54 +141,60 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	@Override
 	public List<Activity> listActivities(String targetId,
 			String PreviousActivityID, int limit) {
-		List<Activity> activities = null;
 		DSConnection con = new DSConnection();
 		Connection connection = con.getConnection();
-		if (connection != null) {
-			PreparedStatement statement = null;
-			ResultSet resultSet = null;
-			String tenantDomain = SocialUtil.getTenantDomain();
-			limit = SocialUtil.getActivityLimit(limit);
-			PreviousActivityID = SocialUtil
-					.getPreviousActivityID(PreviousActivityID);
-			String SELECT_SQL;
+		
+		if (connection == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(Constants.CONNECTION_ERROR);
+			}
+			return null;
+		}
+		
+		List<Activity> activities = null;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		String tenantDomain = SocialUtil.getTenantDomain();
+		limit = SocialUtil.getActivityLimit(limit);
+		PreviousActivityID = SocialUtil
+				.getPreviousActivityID(PreviousActivityID);
+		String SELECT_SQL;
+
+		if (PreviousActivityID != null) {
+			SELECT_SQL = PAGIN_SELECT_SQL;
+		} else {
+			SELECT_SQL = INIT_SELECT_SQL;
+		}
+
+		try {
+			statement = connection.prepareStatement(SELECT_SQL);
+
+			statement.setString(1, targetId);
+			statement.setString(2, tenantDomain);
 
 			if (PreviousActivityID != null) {
-				SELECT_SQL = PAGIN_SELECT_SQL;
+				statement.setString(3, PreviousActivityID);
+				statement.setInt(4, limit);
 			} else {
-				SELECT_SQL = INIT_SELECT_SQL;
+				statement.setInt(3, limit);
 			}
 
-			try {
-				statement = connection.prepareStatement(SELECT_SQL);
-
-				statement.setString(1, targetId);
-				statement.setString(2, tenantDomain);
-
-				if (PreviousActivityID != null) {
-					statement.setString(3, PreviousActivityID);
-					statement.setInt(4, limit);
-				} else {
-					statement.setInt(3, limit);
-				}
-
-				resultSet = statement.executeQuery();
-				activities = new ArrayList<Activity>();
-				while (resultSet.next()) {
-					JsonObject body = (JsonObject) parser.parse(resultSet
-							.getString(Constants.BODY_COLUMN));
-					Activity activity = new SQLActivity(body);
-					activities.add(activity);
-				}
-			} catch (SQLException e) {
-				log.error("Unable to retrieve activities. " + e);
-			} finally {
-				if (con != null) {
-					con.closeConnection(connection);
-				}
+			resultSet = statement.executeQuery();
+			activities = new ArrayList<Activity>();
+			while (resultSet.next()) {
+				JsonObject body = (JsonObject) parser.parse(resultSet
+						.getString(Constants.BODY_COLUMN));
+				Activity activity = new SQLActivity(body);
+				activities.add(activity);
 			}
-
+		} catch (SQLException e) {
+			log.error("Unable to retrieve activities. " + e);
+		} finally {
+			if (con != null) {
+				con.closeConnection(connection);
+			}
 		}
+
 		if (activities != null) {
 			return activities;
 		} else {
@@ -215,19 +232,20 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		Connection connection = con.getConnection();
 
 		if (connection == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(Constants.CONNECTION_ERROR);
+			}
 			return null;
 		}
 
 		PreparedStatement statement;
+		JsonArray assets = new JsonArray();
+		JsonObject jsonObj = new JsonObject();
 
 		try {
 			statement = connection.prepareStatement(TOP_ASSETS_SELECT_SQL);
 			// TODO need to implement limit
 			ResultSet resultSet = statement.executeQuery();
-
-			JsonArray assets = new JsonArray();
-			JsonObject jsonObj = new JsonObject();
-
 			jsonObj.add(Constants.ASSETS, assets);
 
 			if (resultSet.next()) {
@@ -245,9 +263,6 @@ public class SQLActivityBrowser implements ActivityBrowser {
 							.getString(Constants.CONTEXT_ID_COLUMN);
 					assets.add((JsonElement) parser.parse(targetId));
 				}
-
-			} else {
-				return null;
 			}
 
 		} catch (SQLException e) {
@@ -257,7 +272,11 @@ public class SQLActivityBrowser implements ActivityBrowser {
 				con.closeConnection(connection);
 			}
 		}
-		return null;
+		if (assets.size() > 0) {
+			return jsonObj;
+		} else {
+			return null;
+		}
 
 	}
 
@@ -267,27 +286,26 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		Connection connection = con.getConnection();
 
 		if (connection == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(Constants.CONNECTION_ERROR);
+			}
 			return null;
 		}
 
 		PreparedStatement statement;
+		JsonArray comments = new JsonArray();
+		JsonObject jsonObj = new JsonObject();
 
 		try {
 			statement = connection.prepareStatement(TOP_COMMENTS_SELECT_SQL);
 			statement.setString(1, targetId);
 			statement.setInt(2, likes);
 			ResultSet resultSet = statement.executeQuery();
-
-			JsonArray assets = new JsonArray();
-			JsonObject jsonObj = new JsonObject();
-
-			jsonObj.add(Constants.ASSETS, assets);
+			jsonObj.add(Constants.COMMENTS, comments);
 
 			if (resultSet.next()) {
 				String body = resultSet.getString(Constants.BODY_COLUMN);
-				assets.add((JsonElement) parser.parse(body));
-			} else {
-				return null;
+				comments.add((JsonElement) parser.parse(body));
 			}
 		} catch (SQLException e) {
 			log.error("Unable to retrieve top comments. " + e);
@@ -296,6 +314,10 @@ public class SQLActivityBrowser implements ActivityBrowser {
 				con.closeConnection(connection);
 			}
 		}
-		return null;
+		if (comments.size() > 0) {
+			return jsonObj;
+		} else {
+			return null;
+		}
 	}
 }

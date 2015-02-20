@@ -40,6 +40,7 @@ public class Constants {
 	public static final String ATTACHMENTS = "attachments";
 	public static final String TIMESTAMP = "timestamp";
 	public static final String ASSETS = "assets";
+	public static final String COMMENTS = "comments";
 	public static final String RATING = "rating";
 
 	public static final String TARGET_JSON_PROP = "target";
@@ -53,6 +54,7 @@ public class Constants {
 	public static final String SETUP_CMD = "setup";
 	//Use this value if limit is not specified by the client 
 	public static final int MAXIMUM_ACTIVITY_SELECT_COUNT = 100;
+	public static final String CONNECTION_ERROR = "Error while getting connection to the datasource.";
 
 	public static enum VERB {
 		like, dislike, unlike, disunlike;
