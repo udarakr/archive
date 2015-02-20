@@ -18,8 +18,6 @@
 
 package org.wso2.carbon.social.core;
 
-//import org.mozilla.javascript.NativeObject;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -30,14 +28,18 @@ public abstract class ActivityPublisher {
 	
 	private JsonParser parser = new JsonParser();
 	
-	public String publish(JsonObject activity) {
+	public String publish(String activity) {
+		
+		JsonObject jsonObject = (JsonObject)parser.parse(activity);
+		
 		String id = UUID.randomUUID().toString();
 		String unixTimestamp = Long.toString(System.currentTimeMillis() / 1000L);
-		JsonObject object = (JsonObject) activity.get("object");
-		object.addProperty(Constants.ID, id);
-		object.add(Constants.PUBLISHED, (JsonElement) parser.parse(unixTimestamp));
 		
-		return publishActivity(activity);
+		JsonObject object = (JsonObject) jsonObject.get("object");
+		object.add(Constants.ID, (JsonElement)parser.parse(id));
+		jsonObject.add(Constants.PUBLISHED, (JsonElement) parser.parse(unixTimestamp));
+		
+		return publishActivity(jsonObject);
 	}
 
 	protected abstract String publishActivity(JsonObject activity);

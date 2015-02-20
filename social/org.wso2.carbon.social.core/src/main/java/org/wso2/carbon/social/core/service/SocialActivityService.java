@@ -19,8 +19,6 @@
 package org.wso2.carbon.social.core.service;
 
 import com.google.gson.JsonObject;
-
-import org.mozilla.javascript.NativeObject;
 import org.wso2.carbon.social.core.Activity;
 import org.wso2.carbon.social.core.ActivityBrowser;
 import org.wso2.carbon.social.core.ActivityPublisher;
@@ -30,14 +28,14 @@ import java.util.List;
 
 public abstract class SocialActivityService {
 
-	public String publish(JsonObject activity) {
+	public String publish(String activity) {
 		return getActivityPublisher().publish(activity);
 	}
 
-	public String[] listActivities(String targetId, String PreviousActivityID,
+	public String[] listActivities(String targetId, String previousActivityID,
 			int limit) {
 		List<Activity> activities = getActivityBrowser()
-				.listActivitiesChronologically(targetId, PreviousActivityID,
+				.listActivitiesChronologically(targetId, previousActivityID,
 						limit);
 		String[] serializedActivities = new String[activities.size()];
 		for (int i = 0; i < activities.size(); i++) {
@@ -51,7 +49,7 @@ public abstract class SocialActivityService {
 	}
 
 	public String getSocialObjectJson(String targetId, String sortOrder,
-			String PreviousActivityID, int limit) {
+			String previousActivityID, int limit) {
 		SortOrder order;
 		try {
 			order = SortOrder.valueOf(sortOrder);
@@ -59,7 +57,7 @@ public abstract class SocialActivityService {
 			order = SortOrder.NEWEST;
 		}
 		JsonObject socialObject = getActivityBrowser().getSocialObject(
-				targetId, order, PreviousActivityID, limit);
+				targetId, order, previousActivityID, limit);
 
 		if (socialObject != null) {
 			return socialObject.toString();
@@ -87,9 +85,13 @@ public abstract class SocialActivityService {
 			return "{}";
 		}
 	}
-	
+
 	public boolean removeActivity(String activityId) {
 		return getActivityPublisher().remove(activityId);
+	}
+
+	public boolean isUserliked(String userId, String targetId, int like) {
+		return getActivityBrowser().isUserlikedActivity(userId, targetId, like);
 	}
 
 	public abstract ActivityBrowser getActivityBrowser();
@@ -102,5 +104,5 @@ public abstract class SocialActivityService {
 	 *
 	 * @param configObject
 	 */
-	public abstract void configPublisher(NativeObject configObject);
+	public abstract void configPublisher(String configuration);
 }

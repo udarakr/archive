@@ -98,7 +98,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			+ "," + Constants.BODY_COLUMN + "," + Constants.CONTEXT_ID_COLUMN
 			+ "," + Constants.USER_COLUMN + ","
 			+ Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.LIKES_COLUMN
-			+ ", " + Constants.UNLIKES_COLUMN + " " + Constants.TIMESTAMP
+			+ ", " + Constants.UNLIKES_COLUMN + ", " + Constants.TIMESTAMP
 			+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
 
 	private static final String INSERT_RATING_SQL = "INSERT INTO "
@@ -112,7 +112,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			+ Constants.SOCIAL_LIKES_TABLE_NAME + "(" + Constants.ID_COLUMN
 			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.USER_COLUMN
 			+ ", " + Constants.TENANT_DOMAIN_COLUMN + ", "
-			+ Constants.LIKES_COLUMN + "," + Constants.TIMESTAMP
+			+ Constants.LIKE_VALUE_COLUMN + "," + Constants.TIMESTAMP
 			+ ") VALUES(?, ?, ?, ?, ?, ?)";
 
 	private static final String DELETE_LIKE_ACTIVITY = "DELETE FROM "
@@ -120,12 +120,12 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			+ Constants.CONTEXT_ID_COLUMN + " =? AND " + Constants.USER_COLUMN
 			+ " =?";
 
-	private static final String COMMENT_ACTIVITY_SELECT_FOR_UPDATE_SQL = "BEGIN SELECT "
+	private static final String COMMENT_ACTIVITY_SELECT_FOR_UPDATE_SQL = "SELECT "
 			+ Constants.BODY_COLUMN
 			+ " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME
 			+ " WHERE "
-			+ Constants.ID_COLUMN + " =? FOR UPDATE";
+			+ Constants.ID_COLUMN + " =?";
 
 	public static final String COMMENT_ACTIVITY_SELECT_SQL = "SELECT "
 			+ Constants.BODY_COLUMN + " FROM "
@@ -136,22 +136,22 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " SET "
 			+ Constants.BODY_COLUMN + "=?, " + Constants.LIKES_COLUMN + "=?, "
 			+ Constants.UNLIKES_COLUMN + "=? WHERE " + Constants.ID_COLUMN
-			+ " =? END";
+			+ " =?";
 
-	public static final String SELECT_CACHE_SQL = "BEGIN SELECT "
+	public static final String SELECT_CACHE_SQL = "SELECT "
 			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " WHERE "
-			+ Constants.CONTEXT_ID_COLUMN + "=? FOR UPDATE";
+			+ Constants.CONTEXT_ID_COLUMN + "=?";
 
 	public static final String UPDATE_CACHE_SQL = "UPDATE "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " SET "
 			+ Constants.RATING_TOTAL + "=?, " + Constants.RATING_COUNT
-			+ "=? WHERE " + Constants.CONTEXT_ID_COLUMN + "=? END";
+			+ "=? WHERE " + Constants.CONTEXT_ID_COLUMN + "=?";
 
 	public static final String INSERT_CACHE_SQL = "INSERT INTO "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " ("
 			+ Constants.CONTEXT_ID_COLUMN + ", " + Constants.RATING_TOTAL
-			+ ", " + Constants.RATING_COUNT + ") VALUES(?, ?, ?) END";
+			+ ", " + Constants.RATING_COUNT + ") VALUES(?, ?, ?)";
 
 	public static final String DELETE_COMMENT_SQL = "DELETE FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
@@ -179,7 +179,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 
 			String json = null;
 
-			json = jsonObject.getAsString();
+			json = jsonObject.toString();
 			String targetId = activity.getTargetId();
 			String id = activity.getId();
 			String userId = activity.getActorId();
@@ -210,8 +210,8 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				commentStatement = connection
 						.prepareStatement(INSERT_COMMENT_SQL);
 				commentStatement.setString(1, id);
-				commentStatement.setString(2, targetId);
-				commentStatement.setString(3, json);
+				commentStatement.setString(2, json);
+				commentStatement.setString(3, targetId);
 				commentStatement.setString(4, userId);
 				commentStatement.setString(5, tenantDomain);
 				commentStatement.setInt(6, totalLikes);
@@ -256,7 +256,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				try {
 					connection.rollback();
 				} catch (SQLException e1) {
-					log.error("Error while rollback operation. " + e);
+					log.error(Constants.ROLLBACK_ERROR + " " + e1);
 				}
 				log.error(ErrorStr + e);
 			} finally {
@@ -285,18 +285,24 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		if (connection != null) {
 			try {
 				connection.setAutoCommit(false);
-
 				String verb = activity.getVerb();
 				int likeValue;
 				// target of a like activity is a comment
 				String commentID = activity.getTargetId();
-				ResultSet commentResultSet = getCommentResultSet(commentID);
+				// ResultSet commentResultSet = getCommentResultSet(commentID);
 
-				if (commentResultSet.next()) {
+				PreparedStatement selectActivityStatement;
+				ResultSet resultSet;
 
+				selectActivityStatement = connection
+						.prepareStatement(COMMENT_ACTIVITY_SELECT_FOR_UPDATE_SQL);
+				selectActivityStatement.setString(1, commentID);
+				resultSet = selectActivityStatement.executeQuery();
+
+				if (resultSet.next()) {
+					
 					JsonObject currentBody = (JsonObject) parser
-							.parse(commentResultSet
-									.getString(Constants.BODY_COLUMN));
+							.parse(resultSet.getString(Constants.BODY_COLUMN));
 					Activity currentActivity = new SQLActivity(currentBody);
 					PreparedStatement updateActivityStatement;
 
@@ -309,16 +315,16 @@ public class SQLActivityPublisher extends ActivityPublisher {
 						likeValue = 1;
 						insertLikeActivity(activity, likeValue, connection);
 						break;
-					case unlike:
+					case dislike:
 						dislikeCount += 1;
 						likeValue = 0;
 						insertLikeActivity(activity, likeValue, connection);
 						break;
-					case dislike:
+					case unlike:
 						likeCount -= 1;
 						removeLikeActivity(activity, connection);
 						break;
-					case disunlike:
+					case undislike:
 						dislikeCount -= 1;
 						removeLikeActivity(activity, connection);
 						break;
@@ -349,7 +355,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				try {
 					connection.rollback();
 				} catch (SQLException e1) {
-					log.error("Error while rollback operation. " + e);
+					log.error(Constants.ROLLBACK_ERROR + " " + e1);
 				}
 				log.error(ErrorStr + e);
 			} finally {
@@ -359,7 +365,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 
 	}
 
-	private ResultSet getCommentResultSet(String commentID) {
+	/*private ResultSet getCommentResultSet(String commentID) {
 		DSConnection con = new DSConnection();
 		Connection selectConnection = con.getConnection();
 
@@ -386,7 +392,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			con.closeConnection(selectConnection);
 		}
 		return null;
-	}
+	}*/
 
 	/*
 	 * private void updateSocialCommentLikes(SQLActivity activity, Connection
@@ -452,6 +458,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			deleteActivityStatement.setString(1, targetId);
 			deleteActivityStatement.setString(2, actor);
 			deleteActivityStatement.executeUpdate();
+
 		} catch (SQLException e) {
 			log.error("Error while removing like activity from the table: "
 					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
@@ -477,6 +484,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			insertActivityStatement.setString(4, tenantDomain);
 			insertActivityStatement.setInt(5, likeValue);
 			insertActivityStatement.setInt(6, timestamp);
+			insertActivityStatement.executeUpdate();
 		} catch (SQLException e) {
 			log.error("Error while adding like activity to the table: "
 					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
@@ -495,49 +503,49 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	 */
 	private void updateRatingCache(Connection connection, String targetId,
 			int rating) {
-		DSConnection con = new DSConnection();
-		Connection selectConnection = con.getConnection();
-		if (selectConnection != null) {
-			ResultSet resultSet = null;
+		// DSConnection con = new DSConnection();
+		// Connection selectConnection = con.getConnection();
+		// if (selectConnection != null) {
+		ResultSet resultSet = null;
 
-			PreparedStatement selectCacheStatement;
-			PreparedStatement updateCacheStatement;
-			PreparedStatement insertCacheStatement;
+		PreparedStatement selectCacheStatement;
+		PreparedStatement updateCacheStatement;
+		PreparedStatement insertCacheStatement;
 
-			try {
-				selectCacheStatement = selectConnection
-						.prepareStatement(SELECT_CACHE_SQL);
-				selectCacheStatement.setString(1, targetId);
-				resultSet = selectCacheStatement.executeQuery();
+		try {
+			selectCacheStatement = connection
+					.prepareStatement(SELECT_CACHE_SQL);
+			selectCacheStatement.setString(1, targetId);
+			resultSet = selectCacheStatement.executeQuery();
 
-				if (!resultSet.next()) {
-					insertCacheStatement = connection
-							.prepareStatement(INSERT_CACHE_SQL);
-					insertCacheStatement.setString(1, targetId);
-					insertCacheStatement.setInt(2, rating);
-					insertCacheStatement.setInt(3, 1);
-					insertCacheStatement.executeUpdate();
-				} else {
-					int total, count;
-					total = Integer.parseInt(resultSet
-							.getString(Constants.RATING_TOTAL));
-					count = Integer.parseInt(resultSet
-							.getString(Constants.RATING_COUNT));
+			if (!resultSet.next()) {
+				insertCacheStatement = connection
+						.prepareStatement(INSERT_CACHE_SQL);
+				insertCacheStatement.setString(1, targetId);
+				insertCacheStatement.setInt(2, rating);
+				insertCacheStatement.setInt(3, 1);
+				insertCacheStatement.executeUpdate();
+			} else {
+				int total, count;
+				total = Integer.parseInt(resultSet
+						.getString(Constants.RATING_TOTAL));
+				count = Integer.parseInt(resultSet
+						.getString(Constants.RATING_COUNT));
 
-					updateCacheStatement = connection
-							.prepareStatement(UPDATE_CACHE_SQL);
+				updateCacheStatement = connection
+						.prepareStatement(UPDATE_CACHE_SQL);
 
-					updateCacheStatement.setInt(1, total + rating);
-					updateCacheStatement.setInt(2, count + 1);
-					updateCacheStatement.setString(3, targetId);
-					updateCacheStatement.executeUpdate();
-				}
-			} catch (SQLException e) {
-				log.error("Unable to update the cache. " + e);
-			} finally {
-				con.closeConnection(selectConnection);
+				updateCacheStatement.setInt(1, total + rating);
+				updateCacheStatement.setInt(2, count + 1);
+				updateCacheStatement.setString(3, targetId);
+				updateCacheStatement.executeUpdate();
 			}
+		} catch (SQLException e) {
+			log.error("Unable to update the cache. " + e);
+		} finally {
+			// con.closeConnection(selectConnection);
 		}
+		// }
 	}
 
 	@Override
@@ -573,6 +581,11 @@ public class SQLActivityPublisher extends ActivityPublisher {
 
 			connection.commit();
 		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				log.error(Constants.ROLLBACK_ERROR + " " + e1);
+			}
 			log.error("Error while removing the activity. Activity ID: "
 					+ activityId + ". " + e);
 		} finally {

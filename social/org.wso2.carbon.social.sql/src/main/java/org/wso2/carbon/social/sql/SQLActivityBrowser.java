@@ -75,6 +75,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.CONTEXT_ID_COLUMN + " =? AND " + Constants.LIKES_COLUMN
 			+ " >?";
 
+	public static final String SELECT_LIKE_STATUS = "SELECT "
+			+ Constants.ID_COLUMN + " FROM "
+			+ Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE "
+			+ Constants.USER_COLUMN + " =? AND " + Constants.CONTEXT_ID_COLUMN
+			+ " =? AND " + Constants.LIKE_VALUE_COLUMN + " =?";
+
 	private JsonParser parser = new JsonParser();
 
 	@Override
@@ -120,10 +126,10 @@ public class SQLActivityBrowser implements ActivityBrowser {
 
 	@Override
 	public JsonObject getSocialObject(String targetId, SortOrder order,
-			String PreviousActivityID, int limit) {
+			String previousActivityID, int limit) {
 
 		List<Activity> activities = listActivities(targetId,
-				PreviousActivityID, limit);
+				previousActivityID, limit);
 
 		JsonArray attachments = new JsonArray();
 		JsonObject jsonObj = new JsonObject();
@@ -140,27 +146,27 @@ public class SQLActivityBrowser implements ActivityBrowser {
 
 	@Override
 	public List<Activity> listActivities(String targetId,
-			String PreviousActivityID, int limit) {
+			String previousActivityID, int limit) {
 		DSConnection con = new DSConnection();
 		Connection connection = con.getConnection();
-		
+
 		if (connection == null) {
 			if (log.isDebugEnabled()) {
 				log.debug(Constants.CONNECTION_ERROR);
 			}
 			return null;
 		}
-		
+
 		List<Activity> activities = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		String tenantDomain = SocialUtil.getTenantDomain();
 		limit = SocialUtil.getActivityLimit(limit);
-		PreviousActivityID = SocialUtil
-				.getPreviousActivityID(PreviousActivityID);
+		previousActivityID = SocialUtil
+				.getPreviousActivityID(previousActivityID);
 		String SELECT_SQL;
 
-		if (PreviousActivityID != null) {
+		if (previousActivityID != null) {
 			SELECT_SQL = PAGIN_SELECT_SQL;
 		} else {
 			SELECT_SQL = INIT_SELECT_SQL;
@@ -172,8 +178,8 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			statement.setString(1, targetId);
 			statement.setString(2, tenantDomain);
 
-			if (PreviousActivityID != null) {
-				statement.setString(3, PreviousActivityID);
+			if (previousActivityID != null) {
+				statement.setString(3, previousActivityID);
 				statement.setInt(4, limit);
 			} else {
 				statement.setInt(3, limit);
@@ -204,9 +210,9 @@ public class SQLActivityBrowser implements ActivityBrowser {
 
 	@Override
 	public List<Activity> listActivitiesChronologically(String targetId,
-			String PreviousActivityID, int limit) {
+			String previousActivityID, int limit) {
 		List<Activity> activities = listActivities(targetId,
-				PreviousActivityID, limit);
+				previousActivityID, limit);
 		return activities;
 	}
 
@@ -320,4 +326,38 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return null;
 		}
 	}
+
+	@Override
+	public boolean isUserlikedActivity(String userId, String targetId, int like) {
+		DSConnection con = new DSConnection();
+		Connection connection = con.getConnection();
+
+		if (connection == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(Constants.CONNECTION_ERROR);
+			}
+			return false;
+		}
+		PreparedStatement statement;
+		ResultSet ret;
+		try {
+			statement = connection.prepareStatement(SELECT_LIKE_STATUS);
+			statement.setString(1, userId);
+			statement.setString(2, targetId);
+			statement.setInt(3, like);
+			ret = statement.executeQuery();
+
+			if (ret.next()) {
+				return true;
+			}
+
+		} catch (SQLException e) {
+			log.error("Error while checking user like activity. " + e);
+		} finally {
+			con.closeConnection(connection);
+		}
+
+		return false;
+	}
+
 }

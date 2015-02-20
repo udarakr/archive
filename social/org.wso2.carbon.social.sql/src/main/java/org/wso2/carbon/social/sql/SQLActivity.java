@@ -31,7 +31,8 @@ public class SQLActivity implements Activity {
 
 	@Override
 	public String getId() {
-		return this.body.get("id").getAsString();
+		JsonObject object = (JsonObject) this.body.get("object");
+		return object.get("id").getAsString();
 	}
 
 	@Override
@@ -58,13 +59,15 @@ public class SQLActivity implements Activity {
 
 	@Override
 	public int getLikeCount() {
-		JsonObject likes = (JsonObject) this.body.get("likes");
+		JsonObject object = (JsonObject) this.body.get("object");
+		JsonObject likes = (JsonObject) object.get("likes");
 		return likes.get("totalItems").getAsInt();
 	}
 
 	@Override
 	public int getDislikeCount() {
-		JsonObject dislikes = (JsonObject) this.body.get("dislikes");
+		JsonObject object = (JsonObject) this.body.get("object");
+		JsonObject dislikes = (JsonObject) object.get("dislikes");
 		return dislikes.get("totalItems").getAsInt();
 	}
 
@@ -87,14 +90,16 @@ public class SQLActivity implements Activity {
 
 	@Override
 	public void setLikeCount(int likeCount) {
-		JsonObject likes = (JsonObject) this.body.get("likes");
+		JsonObject object = (JsonObject) this.body.get("object");
+		JsonObject likes = (JsonObject) object.get("likes");
 		likes.addProperty("totalItems", likeCount);
 		
 	}
 
 	@Override
 	public void setDislikeCount(int dislikeCount) {
-		JsonObject dislikes = (JsonObject) this.body.get("dislikes");
+		JsonObject object = (JsonObject) this.body.get("object");
+		JsonObject dislikes = (JsonObject) object.get("dislikes");
 		dislikes.addProperty("totalItems", dislikeCount);
 		
 	}

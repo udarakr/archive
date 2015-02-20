@@ -55,9 +55,11 @@ public class Constants {
 	//Use this value if limit is not specified by the client 
 	public static final int MAXIMUM_ACTIVITY_SELECT_COUNT = 100;
 	public static final String CONNECTION_ERROR = "Error while getting connection to the datasource.";
+	public static final String ROLLBACK_ERROR = "Error while rollback operation.";
+	public static final String LIKE_VALUE_COLUMN = "like_value";
 
 	public static enum VERB {
-		like, dislike, unlike, disunlike;
+		like, dislike, unlike, undislike;
 	}
 
 }
