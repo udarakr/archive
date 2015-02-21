@@ -25,14 +25,13 @@ import java.util.List;
 public interface ActivityBrowser {
 	double getRating(String targetId);
 
-	JsonObject getSocialObject(String targetId, SortOrder order,
-			String previousActivityID, int limit);
-
-	List<Activity> listActivities(String targetId, String previousActivityID,
+	JsonObject getSocialObject(String targetId, String order, int offset,
 			int limit);
 
-	List<Activity> listActivitiesChronologically(String targetId,
-			String previousActivityID, int limit);
+	List<Activity> listActivities(String targetId, String order,int offset, int limit);
+
+	List<Activity> listActivitiesChronologically(String targetId, String order,
+			int offset, int limit);
 
 	JsonObject getTopAssets(double avgRating, int limit);
 

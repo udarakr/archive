@@ -32,10 +32,10 @@ public abstract class SocialActivityService {
 		return getActivityPublisher().publish(activity);
 	}
 
-	public String[] listActivities(String targetId, String previousActivityID,
+	public String[] listActivities(String targetId, String order, int offset,
 			int limit) {
 		List<Activity> activities = getActivityBrowser()
-				.listActivitiesChronologically(targetId, previousActivityID,
+				.listActivitiesChronologically(targetId, order, offset,
 						limit);
 		String[] serializedActivities = new String[activities.size()];
 		for (int i = 0; i < activities.size(); i++) {
@@ -49,15 +49,15 @@ public abstract class SocialActivityService {
 	}
 
 	public String getSocialObjectJson(String targetId, String sortOrder,
-			String previousActivityID, int limit) {
-		SortOrder order;
+			int offset, int limit) {
+		/*SortOrder order;
 		try {
 			order = SortOrder.valueOf(sortOrder);
 		} catch (IllegalArgumentException e) {
 			order = SortOrder.NEWEST;
-		}
+		}*/
 		JsonObject socialObject = getActivityBrowser().getSocialObject(
-				targetId, order, previousActivityID, limit);
+				targetId, sortOrder, offset, limit);
 
 		if (socialObject != null) {
 			return socialObject.toString();

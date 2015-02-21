@@ -27,7 +27,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.social.core.Activity;
 import org.wso2.carbon.social.core.ActivityBrowser;
-import org.wso2.carbon.social.core.SortOrder;
 import org.wso2.carbon.social.sql.Constants;
 
 import java.sql.Connection;
@@ -42,22 +41,35 @@ import org.wso2.carbon.social.sql.SocialUtil;
 
 public class SQLActivityBrowser implements ActivityBrowser {
 	private static final Log log = LogFactory.getLog(SQLActivityBrowser.class);
-	public static final String PAGIN_SELECT_SQL = "SELECT "
-			+ Constants.BODY_COLUMN + " FROM "
-			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
-			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
-			+ Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.TIMESTAMP
-			+ " < (SELECT " + Constants.TIMESTAMP + " FROM "
-			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
-			+ Constants.ID_COLUMN + " =?) ORDER BY " + Constants.TIMESTAMP
-			+ " DESC LIMIT ?";
+	/*
+	 * public static final String PAGIN_SELECT_SQL = "SELECT " +
+	 * Constants.BODY_COLUMN + " FROM " + Constants.SOCIAL_COMMENTS_TABLE_NAME +
+	 * " WHERE " + Constants.CONTEXT_ID_COLUMN + "=? AND " +
+	 * Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.TIMESTAMP +
+	 * " < (SELECT " + Constants.TIMESTAMP + " FROM " +
+	 * Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE " + Constants.ID_COLUMN +
+	 * " =?) ORDER BY " + Constants.TIMESTAMP + " DESC LIMIT ?";
+	 * 
+	 * public static final String INIT_SELECT_SQL = "SELECT " +
+	 * Constants.BODY_COLUMN + " FROM " + Constants.SOCIAL_COMMENTS_TABLE_NAME +
+	 * " WHERE " + Constants.CONTEXT_ID_COLUMN + "=? AND " +
+	 * Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY " +
+	 * Constants.TIMESTAMP + " DESC LIMIT ?";
+	 */
 
-	public static final String INIT_SELECT_SQL = "SELECT "
+	public static final String COMMENT_SELECT_SQL_DESC = "SELECT "
 			+ Constants.BODY_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
-			+ Constants.TIMESTAMP + " DESC LIMIT ?";
+			+ Constants.TIMESTAMP + " DESC LIMIT ?,?";
+
+	public static final String COMMENT_SELECT_SQL_ASC = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
+			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
+			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
+			+ Constants.TIMESTAMP + " ASC LIMIT ?,?";
 
 	public static final String SELECT_CACHE_SQL = "SELECT "
 			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
@@ -80,6 +92,13 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE "
 			+ Constants.USER_COLUMN + " =? AND " + Constants.CONTEXT_ID_COLUMN
 			+ " =? AND " + Constants.LIKE_VALUE_COLUMN + " =?";
+
+	public static final String POPULAR_COMMENTS_SELECT_SQL = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
+			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
+			+ Constants.TENANT_DOMAIN_COLUMN + "=? ORDER BY "
+			+ Constants.LIKES_COLUMN + " DESC LIMIT ?,?";
 
 	private JsonParser parser = new JsonParser();
 
@@ -125,11 +144,11 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	}
 
 	@Override
-	public JsonObject getSocialObject(String targetId, SortOrder order,
-			String previousActivityID, int limit) {
+	public JsonObject getSocialObject(String targetId, String order,
+			int offset, int limit) {
 
-		List<Activity> activities = listActivities(targetId,
-				previousActivityID, limit);
+		List<Activity> activities = listActivities(targetId, order, offset,
+				limit);
 
 		JsonArray attachments = new JsonArray();
 		JsonObject jsonObj = new JsonObject();
@@ -145,8 +164,8 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	}
 
 	@Override
-	public List<Activity> listActivities(String targetId,
-			String previousActivityID, int limit) {
+	public List<Activity> listActivities(String targetId, String order,
+			int offset, int limit) {
 		DSConnection con = new DSConnection();
 		Connection connection = con.getConnection();
 
@@ -157,33 +176,28 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return null;
 		}
 
+		String SQL;
+		if ("NEWEST".equals(order)) {
+			SQL = COMMENT_SELECT_SQL_DESC;
+		} else if("OLDEST".equals(order)) {
+			SQL = COMMENT_SELECT_SQL_ASC;
+		}else{
+			SQL = POPULAR_COMMENTS_SELECT_SQL;
+		}
+
 		List<Activity> activities = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		String tenantDomain = SocialUtil.getTenantDomain();
 		limit = SocialUtil.getActivityLimit(limit);
-		previousActivityID = SocialUtil
-				.getPreviousActivityID(previousActivityID);
-		String SELECT_SQL;
-
-		if (previousActivityID != null) {
-			SELECT_SQL = PAGIN_SELECT_SQL;
-		} else {
-			SELECT_SQL = INIT_SELECT_SQL;
-		}
 
 		try {
-			statement = connection.prepareStatement(SELECT_SQL);
+			statement = connection.prepareStatement(SQL);
 
 			statement.setString(1, targetId);
 			statement.setString(2, tenantDomain);
-
-			if (previousActivityID != null) {
-				statement.setString(3, previousActivityID);
-				statement.setInt(4, limit);
-			} else {
-				statement.setInt(3, limit);
-			}
+			statement.setInt(3, offset);
+			statement.setInt(4, limit);
 
 			resultSet = statement.executeQuery();
 			activities = new ArrayList<Activity>();
@@ -210,9 +224,9 @@ public class SQLActivityBrowser implements ActivityBrowser {
 
 	@Override
 	public List<Activity> listActivitiesChronologically(String targetId,
-			String previousActivityID, int limit) {
-		List<Activity> activities = listActivities(targetId,
-				previousActivityID, limit);
+			String order, int offset, int limit) {
+		List<Activity> activities = listActivities(targetId, order, offset,
+				limit);
 		return activities;
 	}
 
