@@ -100,6 +100,13 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? ORDER BY "
 			+ Constants.LIKES_COLUMN + " DESC LIMIT ?,?";
 
+	public static final String POLL_COMMENTS_SQL = "SELECT "
+			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
+			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
+			+ Constants.TENANT_DOMAIN_COLUMN
+			+ "=? AND " + Constants.TIMESTAMP + " >? OREDR BY " + Constants.TIMESTAMP + " DESC";
+
 	private JsonParser parser = new JsonParser();
 
 	@Override
@@ -179,9 +186,9 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		String SQL;
 		if ("NEWEST".equals(order)) {
 			SQL = COMMENT_SELECT_SQL_DESC;
-		} else if("OLDEST".equals(order)) {
+		} else if ("OLDEST".equals(order)) {
 			SQL = COMMENT_SELECT_SQL_ASC;
-		}else{
+		} else {
 			SQL = POPULAR_COMMENTS_SELECT_SQL;
 		}
 
@@ -372,6 +379,47 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		}
 
 		return false;
+	}
+
+	@Override
+	public JsonObject pollNewestComments(String targetId, int timestamp) {
+		DSConnection con = new DSConnection();
+		Connection connection = con.getConnection();
+
+		if (connection == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(Constants.CONNECTION_ERROR);
+			}
+			return null;
+		}
+
+		PreparedStatement statement;
+		JsonArray comments = new JsonArray();
+		JsonObject jsonObj = new JsonObject();
+
+		try {
+			statement = connection.prepareStatement(POLL_COMMENTS_SQL);
+			statement.setString(1, targetId);
+			statement.setInt(2, timestamp);
+			ResultSet resultSet = statement.executeQuery();
+			jsonObj.add(Constants.COMMENTS, comments);
+
+			if (resultSet.next()) {
+				String body = resultSet.getString(Constants.BODY_COLUMN);
+				comments.add((JsonElement) parser.parse(body));
+			}
+		} catch (SQLException e) {
+			log.error("Unable to retrieve latest comments. " + e);
+		} finally {
+			if (con != null) {
+				con.closeConnection(connection);
+			}
+		}
+		if (comments.size() > 0) {
+			return jsonObj;
+		} else {
+			return null;
+		}
 	}
 
 }

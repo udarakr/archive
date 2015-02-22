@@ -39,4 +39,6 @@ public interface ActivityBrowser {
 
 	boolean isUserlikedActivity(String userId, String targetId, int like);
 
+	JsonObject pollNewestComments(String targetId, int timestamp);
+
 }

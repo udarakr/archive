@@ -22,7 +22,6 @@ import com.google.gson.JsonObject;
 import org.wso2.carbon.social.core.Activity;
 import org.wso2.carbon.social.core.ActivityBrowser;
 import org.wso2.carbon.social.core.ActivityPublisher;
-import org.wso2.carbon.social.core.SortOrder;
 
 import java.util.List;
 
@@ -81,6 +80,16 @@ public abstract class SocialActivityService {
 				targetId, likes);
 		if (topCommentObject != null) {
 			return topCommentObject.toString();
+		} else {
+			return "{}";
+		}
+	}
+	
+	public String pollLatestComments(String targetId, int timestamp) {
+		JsonObject newestCommentObject = getActivityBrowser().pollNewestComments(
+				targetId, timestamp);
+		if (newestCommentObject != null) {
+			return newestCommentObject.toString();
 		} else {
 			return "{}";
 		}
