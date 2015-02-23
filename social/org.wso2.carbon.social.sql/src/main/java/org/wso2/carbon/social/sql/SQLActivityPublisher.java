@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.social.sql;
 
+import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -125,7 +126,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			+ " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME
 			+ " WHERE "
-			+ Constants.ID_COLUMN + " =?";
+			+ Constants.ID_COLUMN + " =? FOR UPDATE";
 
 	public static final String COMMENT_ACTIVITY_SELECT_SQL = "SELECT "
 			+ Constants.BODY_COLUMN + " FROM "
@@ -141,7 +142,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	public static final String SELECT_CACHE_SQL = "SELECT "
 			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " WHERE "
-			+ Constants.CONTEXT_ID_COLUMN + "=?";
+			+ Constants.CONTEXT_ID_COLUMN + "=? FOR UPDATE";
 
 	public static final String UPDATE_CACHE_SQL = "UPDATE "
 			+ Constants.SOCIAL_RATING_CACHE_TABLE_NAME + " SET "
@@ -171,7 +172,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	protected String publishActivity(JsonObject jsonObject) {
 		SQLActivity activity = new SQLActivity(jsonObject);
 
-		// TODO use review as the verb insted of post
+		// TODO use review as the verb instead of post
 		if ("post".equals(activity.getVerb())) {
 
 			PreparedStatement commentStatement = null;
@@ -510,24 +511,39 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			return false;
 		}
 
-		PreparedStatement deleteComment = null;
-		PreparedStatement deleteRating = null;
-		PreparedStatement deletelike = null;
+		// DELIMITER //
+		// CREATE PROCEDURE remove(ACTIVITY_ID int)
+		// BEGIN
+		// DELETE FROM SOCIAL_COMMENTS WHERE SOCIAL_COMMENTS.ID=ACTIVITY_ID;
+		// DELETE FROM SOCIAL_RATING WHERE SOCIAL_RATING.ID=ACTIVITY_ID;
+		// DELETE FROM SOCIAL_LIKES WHERE SOCIAL_LIKES.ID=ACTIVITY_ID;
+		// END
+		// //
+
+		CallableStatement deleteComment = null;
+		String storedProc = "{call remove(?)}";
+		// PreparedStatement deleteRating = null;
+		// PreparedStatement deletelike = null;
 		try {
 			connection.setAutoCommit(false);
 			removeRating(activityId, connection);
 
-			deleteComment = connection.prepareStatement(DELETE_COMMENT_SQL);
+			/*
+			 * deleteComment = connection.prepareStatement(DELETE_COMMENT_SQL);
+			 * deleteComment.setString(1, activityId);
+			 * deleteComment.executeUpdate();
+			 * 
+			 * deleteRating = connection.prepareStatement(DELETE_RATING_SQL);
+			 * deleteRating.setString(1, activityId);
+			 * deleteRating.executeUpdate();
+			 * 
+			 * deletelike = connection.prepareStatement(DELETE_LIKES_SQL);
+			 * deletelike.setString(1, activityId); deletelike.executeUpdate();
+			 */
+
+			deleteComment = connection.prepareCall(storedProc);
 			deleteComment.setString(1, activityId);
-			deleteComment.executeUpdate();
-
-			deleteRating = connection.prepareStatement(DELETE_RATING_SQL);
-			deleteRating.setString(1, activityId);
-			deleteRating.executeUpdate();
-
-			deletelike = connection.prepareStatement(DELETE_LIKES_SQL);
-			deletelike.setString(1, activityId);
-			deletelike.executeUpdate();
+			deleteComment.execute();
 
 			connection.commit();
 		} catch (SQLException e) {
@@ -541,8 +557,9 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		} finally {
 			try {
 				deleteComment.close();
-				deleteRating.close();
-				deletelike.close();
+				/*
+				 * deleteRating.close(); deletelike.close();
+				 */
 			} catch (SQLException e) {
 				log.error("Error while closing  deleteComment/deleteRating/deletelike Statements. "
 						+ e);
@@ -605,11 +622,11 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			}
 		} catch (SQLException e) {
 			log.error("Unable to update the rating cache. " + e);
-		}finally{
+		} finally {
 			try {
 				selectStatement.close();
 				getCacheStatement.close();
-				updateCacheStatement.close();			
+				updateCacheStatement.close();
 			} catch (SQLException e) {
 				log.error("Error while closing resultSet and select/getCache/updateCache Statements. "
 						+ e);
