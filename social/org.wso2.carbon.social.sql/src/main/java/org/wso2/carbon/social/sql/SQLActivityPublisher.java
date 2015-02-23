@@ -175,8 +175,8 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		// TODO use review as the verb instead of post
 		if ("post".equals(activity.getVerb())) {
 
-			PreparedStatement commentStatement = null;
-			PreparedStatement ratingStatement = null;
+			PreparedStatement commentStatement;
+			PreparedStatement ratingStatement;
 
 			String json = null;
 
@@ -261,12 +261,6 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				}
 				log.error(ErrorStr + e);
 			} finally {
-				try {
-					commentStatement.close();
-					ratingStatement.close();
-				} catch (SQLException e) {
-					log.error("Error while closing statement/resultset. " + e);
-				}
 				if (con != null) {
 					con.closeConnection(connection);
 				}
@@ -290,9 +284,9 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		Connection connection = con.getConnection();
 
 		if (connection != null) {
-			PreparedStatement selectActivityStatement = null;
-			PreparedStatement updateActivityStatement = null;
-			ResultSet resultSet = null;
+			PreparedStatement selectActivityStatement;
+			PreparedStatement updateActivityStatement;
+			ResultSet resultSet;
 
 			try {
 				connection.setAutoCommit(false);
@@ -358,6 +352,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 					updateActivityStatement.executeUpdate();
 					connection.commit();
 				}
+				resultSet.close();
 			} catch (SQLException e) {
 				try {
 					connection.rollback();
@@ -366,13 +361,6 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				}
 				log.error(ErrorStr + e);
 			} finally {
-				try {
-					selectActivityStatement.close();
-					resultSet.close();
-					updateActivityStatement.close();
-				} catch (SQLException e) {
-					log.error("Error while closing statement/resultset. " + e);
-				}
 				if (con != null) {
 					con.closeConnection(connection);
 				}
@@ -398,13 +386,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		} catch (SQLException e) {
 			log.error("Error while removing like activity from the table: "
 					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
-		} finally {
-			try {
-				deleteActivityStatement.close();
-			} catch (SQLException e) {
-				log.error("Error while closing deleteActivityStatement. " + e);
-			}
-		}
+		} 
 	}
 
 	private void insertLikeActivity(SQLActivity activity, int likeValue,
@@ -430,12 +412,6 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		} catch (SQLException e) {
 			log.error("Error while adding like activity to the table: "
 					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
-		} finally {
-			try {
-				insertActivityStatement.close();
-			} catch (SQLException e) {
-				log.error("Error while closing insertActivityStatement. " + e);
-			}
 		}
 
 	}
@@ -452,9 +428,9 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	private void updateRatingCache(Connection connection, String targetId,
 			int rating) {
 		ResultSet resultSet = null;
-		PreparedStatement selectCacheStatement = null;
-		PreparedStatement updateCacheStatement = null;
-		PreparedStatement insertCacheStatement = null;
+		PreparedStatement selectCacheStatement;
+		PreparedStatement updateCacheStatement;
+		PreparedStatement insertCacheStatement;
 
 		try {
 			selectCacheStatement = connection
@@ -486,17 +462,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			}
 		} catch (SQLException e) {
 			log.error("Unable to update the cache. " + e);
-		} finally {
-			try {
-				resultSet.close();
-				selectCacheStatement.close();
-				updateCacheStatement.close();
-				insertCacheStatement.close();
-			} catch (SQLException e) {
-				log.error("Error while closing resultSet and select/update/insert Statements. "
-						+ e);
-			}
-		}
+		} 
 	}
 
 	@Override
@@ -520,7 +486,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		// END
 		// //
 
-		CallableStatement deleteComment = null;
+		CallableStatement deleteComment;
 		String storedProc = "{call remove(?)}";
 		// PreparedStatement deleteRating = null;
 		// PreparedStatement deletelike = null;
@@ -555,15 +521,6 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			log.error("Error while removing the activity. Activity ID: "
 					+ activityId + ". " + e);
 		} finally {
-			try {
-				deleteComment.close();
-				/*
-				 * deleteRating.close(); deletelike.close();
-				 */
-			} catch (SQLException e) {
-				log.error("Error while closing  deleteComment/deleteRating/deletelike Statements. "
-						+ e);
-			}
 			if (con != null) {
 				con.closeConnection(connection);
 			}
@@ -579,10 +536,10 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	 * @return
 	 */
 	private void removeRating(String activityId, Connection connection) {
-		ResultSet resultSet = null;
-		PreparedStatement selectStatement = null;
-		PreparedStatement getCacheStatement = null;
-		PreparedStatement updateCacheStatement = null;
+		ResultSet resultSet;
+		PreparedStatement selectStatement;
+		PreparedStatement getCacheStatement;
+		PreparedStatement updateCacheStatement;
 
 		try {
 			selectStatement = connection
@@ -622,16 +579,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			}
 		} catch (SQLException e) {
 			log.error("Unable to update the rating cache. " + e);
-		} finally {
-			try {
-				selectStatement.close();
-				getCacheStatement.close();
-				updateCacheStatement.close();
-			} catch (SQLException e) {
-				log.error("Error while closing resultSet and select/getCache/updateCache Statements. "
-						+ e);
-			}
-		}
+		} 
 
 	}
 
