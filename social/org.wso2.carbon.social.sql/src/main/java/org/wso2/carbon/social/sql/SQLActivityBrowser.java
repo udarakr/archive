@@ -104,8 +104,8 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.BODY_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
-			+ Constants.TENANT_DOMAIN_COLUMN
-			+ "=? AND " + Constants.TIMESTAMP + " >? OREDR BY " + Constants.TIMESTAMP + " DESC";
+			+ Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.TIMESTAMP
+			+ " >? OREDR BY " + Constants.TIMESTAMP + " DESC";
 
 	private JsonParser parser = new JsonParser();
 
@@ -121,12 +121,13 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return 0;
 		}
 
-		PreparedStatement statement;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		try {
 			statement = connection.prepareStatement(SELECT_CACHE_SQL);
 
 			statement.setString(1, targetId);
-			ResultSet resultSet = statement.executeQuery();
+			resultSet = statement.executeQuery();
 
 			if (resultSet.next()) {
 				int total, count;
@@ -142,6 +143,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		} catch (SQLException e) {
 			log.error("Unable to retrieve rating for target: " + targetId + e);
 		} finally {
+			try {
+				statement.close();
+				resultSet.close();
+			} catch (SQLException e1) {
+				log.error("Error while closing statement/resultset. " + e1);
+			}
 			if (con != null) {
 				con.closeConnection(connection);
 			}
@@ -217,6 +224,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		} catch (SQLException e) {
 			log.error("Unable to retrieve activities. " + e);
 		} finally {
+			try {
+				statement.close();
+				resultSet.close();
+			} catch (SQLException e1) {
+				log.error("Error while closing statement/resultset. " + e1);
+			}
 			if (con != null) {
 				con.closeConnection(connection);
 			}
@@ -265,14 +278,15 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return null;
 		}
 
-		PreparedStatement statement;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		JsonArray assets = new JsonArray();
 		JsonObject jsonObj = new JsonObject();
 
 		try {
 			statement = connection.prepareStatement(TOP_ASSETS_SELECT_SQL);
 			// TODO need to implement limit
-			ResultSet resultSet = statement.executeQuery();
+			resultSet = statement.executeQuery();
 			jsonObj.add(Constants.ASSETS, assets);
 
 			if (resultSet.next()) {
@@ -295,6 +309,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		} catch (SQLException e) {
 			log.error("Unable to retrieve top assets. " + e);
 		} finally {
+			try {
+				statement.close();
+				resultSet.close();
+			} catch (SQLException e) {
+				log.error("Error while closing statement/resultset. " + e);
+			}
 			if (con != null) {
 				con.closeConnection(connection);
 			}
@@ -319,7 +339,8 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return null;
 		}
 
-		PreparedStatement statement;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		JsonArray comments = new JsonArray();
 		JsonObject jsonObj = new JsonObject();
 
@@ -327,7 +348,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			statement = connection.prepareStatement(TOP_COMMENTS_SELECT_SQL);
 			statement.setString(1, targetId);
 			statement.setInt(2, likes);
-			ResultSet resultSet = statement.executeQuery();
+			resultSet = statement.executeQuery();
 			jsonObj.add(Constants.COMMENTS, comments);
 
 			if (resultSet.next()) {
@@ -337,6 +358,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		} catch (SQLException e) {
 			log.error("Unable to retrieve top comments. " + e);
 		} finally {
+			try {
+				statement.close();
+				resultSet.close();
+			} catch (SQLException e) {
+				log.error("Error while closing statement/resultset. " + e);
+			}
 			if (con != null) {
 				con.closeConnection(connection);
 			}
@@ -359,23 +386,31 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			}
 			return false;
 		}
-		PreparedStatement statement;
-		ResultSet ret;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		try {
 			statement = connection.prepareStatement(SELECT_LIKE_STATUS);
 			statement.setString(1, userId);
 			statement.setString(2, targetId);
 			statement.setInt(3, like);
-			ret = statement.executeQuery();
+			resultSet = statement.executeQuery();
 
-			if (ret.next()) {
+			if (resultSet.next()) {
 				return true;
 			}
 
 		} catch (SQLException e) {
 			log.error("Error while checking user like activity. " + e);
 		} finally {
-			con.closeConnection(connection);
+			try {
+				statement.close();
+				resultSet.close();
+			} catch (SQLException e) {
+				log.error("Error while closing statement/resultset. " + e);
+			}
+			if (con != null) {
+				con.closeConnection(connection);
+			}
 		}
 
 		return false;
@@ -393,7 +428,8 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return null;
 		}
 
-		PreparedStatement statement;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		JsonArray comments = new JsonArray();
 		JsonObject jsonObj = new JsonObject();
 
@@ -401,7 +437,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			statement = connection.prepareStatement(POLL_COMMENTS_SQL);
 			statement.setString(1, targetId);
 			statement.setInt(2, timestamp);
-			ResultSet resultSet = statement.executeQuery();
+			resultSet = statement.executeQuery();
 			jsonObj.add(Constants.COMMENTS, comments);
 
 			if (resultSet.next()) {
@@ -411,6 +447,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		} catch (SQLException e) {
 			log.error("Unable to retrieve latest comments. " + e);
 		} finally {
+			try {
+				statement.close();
+				resultSet.close();
+			} catch (SQLException e) {
+				log.error("Error while closing statement/resultset. " + e);
+			}
 			if (con != null) {
 				con.closeConnection(connection);
 			}
