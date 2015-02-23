@@ -22,7 +22,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.util.UUID;
+//import java.util.UUID;
 
 public abstract class ActivityPublisher {
 	
@@ -32,11 +32,11 @@ public abstract class ActivityPublisher {
 		
 		JsonObject jsonObject = (JsonObject)parser.parse(activity);
 		
-		String id = UUID.randomUUID().toString();
+		//String id = UUID.randomUUID().toString();
 		String unixTimestamp = Long.toString(System.currentTimeMillis() / 1000L);
 		
-		JsonObject object = (JsonObject) jsonObject.get("object");
-		object.add(Constants.ID, (JsonElement)parser.parse(id));
+		//JsonObject object = (JsonObject) jsonObject.get("object");
+		//object.add(Constants.ID, (JsonElement)parser.parse(id));
 		jsonObject.add(Constants.PUBLISHED, (JsonElement) parser.parse(unixTimestamp));
 		
 		return publishActivity(jsonObject);

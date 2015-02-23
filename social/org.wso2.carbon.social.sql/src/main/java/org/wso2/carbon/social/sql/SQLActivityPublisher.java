@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -95,26 +96,24 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	public static final String ErrorStr = "Failed to publish the social event.";
 
 	private static final String INSERT_COMMENT_SQL = "INSERT INTO "
-			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + "(" + Constants.ID_COLUMN
-			+ "," + Constants.BODY_COLUMN + "," + Constants.CONTEXT_ID_COLUMN
-			+ "," + Constants.USER_COLUMN + ","
-			+ Constants.TENANT_DOMAIN_COLUMN + ", " + Constants.LIKES_COLUMN
-			+ ", " + Constants.UNLIKES_COLUMN + ", " + Constants.TIMESTAMP
-			+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + "("
+			+ Constants.BODY_COLUMN + "," + Constants.CONTEXT_ID_COLUMN + ","
+			+ Constants.USER_COLUMN + "," + Constants.TENANT_DOMAIN_COLUMN
+			+ ", " + Constants.LIKES_COLUMN + ", " + Constants.UNLIKES_COLUMN
+			+ ", " + Constants.TIMESTAMP + ") VALUES(?, ?, ?, ?, ?, ?, ?)";
 
 	private static final String INSERT_RATING_SQL = "INSERT INTO "
-			+ Constants.SOCIAL_RATING_TABLE_NAME + "(" + Constants.ID_COLUMN
+			+ Constants.SOCIAL_RATING_TABLE_NAME + "(" + Constants.COMMENT_ID_COLUMN
 			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.USER_COLUMN
 			+ ", " + Constants.TENANT_DOMAIN_COLUMN + ", "
 			+ Constants.RATING_COLUMN + ", " + Constants.TIMESTAMP
 			+ ") VALUES(?, ?, ?, ?, ?, ?)";
 
 	private static final String INSERT_LIKE_SQL = "INSERT INTO "
-			+ Constants.SOCIAL_LIKES_TABLE_NAME + "(" + Constants.ID_COLUMN
-			+ "," + Constants.CONTEXT_ID_COLUMN + "," + Constants.USER_COLUMN
+			+ Constants.SOCIAL_LIKES_TABLE_NAME + "(" + Constants.CONTEXT_ID_COLUMN + "," + Constants.USER_COLUMN
 			+ ", " + Constants.TENANT_DOMAIN_COLUMN + ", "
 			+ Constants.LIKE_VALUE_COLUMN + "," + Constants.TIMESTAMP
-			+ ") VALUES(?, ?, ?, ?, ?, ?)";
+			+ ") VALUES(?, ?, ?, ?, ?)";
 
 	private static final String DELETE_LIKE_ACTIVITY = "DELETE FROM "
 			+ Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE "
@@ -182,7 +181,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 
 			json = jsonObject.toString();
 			String targetId = activity.getTargetId();
-			String id = activity.getId();
+			//String id = activity.getId();
 			String userId = activity.getActorId();
 			int timeStamp = activity.getTimestamp();
 			String tenantDomain = SocialUtil.getTenantDomain();
@@ -201,6 +200,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			int totalLikes = activity.getLikeCount();
 			int totalUnlikes = activity.getDislikeCount();
 			int rating = activity.getRating();
+			long foreign_key = 0;
 
 			try {
 				connection.setAutoCommit(false);
@@ -209,24 +209,30 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				// timestamp) VALUES ();
 
 				commentStatement = connection
-						.prepareStatement(INSERT_COMMENT_SQL);
-				commentStatement.setString(1, id);
-				commentStatement.setString(2, json);
-				commentStatement.setString(3, targetId);
-				commentStatement.setString(4, userId);
-				commentStatement.setString(5, tenantDomain);
-				commentStatement.setInt(6, totalLikes);
-				commentStatement.setInt(7, totalUnlikes);
-				commentStatement.setInt(8, timeStamp);
+						.prepareStatement(INSERT_COMMENT_SQL, Statement.RETURN_GENERATED_KEYS);
+				///commentStatement.setString(1, id);
+				commentStatement.setString(1, json);
+				commentStatement.setString(2, targetId);
+				commentStatement.setString(3, userId);
+				commentStatement.setString(4, tenantDomain);
+				commentStatement.setInt(5, totalLikes);
+				commentStatement.setInt(6, totalUnlikes);
+				commentStatement.setInt(7, timeStamp);
 				commentRet = commentStatement.executeUpdate();
-
+				
+				ResultSet generatedKeys = commentStatement.getGeneratedKeys();
+				
+	            if (generatedKeys.next()) {
+	               foreign_key = generatedKeys.getLong(1);
+	            }
+	            generatedKeys.close();
 				// handle rating activity which comes inside the review
 				if (rating > 0) {
 					// INSERT INTO SOCIAL_RATING
 					// (id,target_id,user_id,tenant_domain,rating_value,timestamp)
 					ratingStatement = connection
 							.prepareStatement(INSERT_RATING_SQL);
-					ratingStatement.setString(1, id);
+					ratingStatement.setLong(1, foreign_key);
 					ratingStatement.setString(2, targetId);
 					ratingStatement.setString(3, userId);
 					ratingStatement.setString(4, tenantDomain);
@@ -240,16 +246,16 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				connection.commit();
 
 				if (commentRet > 0) {
-					return id;
+					return Long.toString(foreign_key);
 				}
 
 				if (log.isDebugEnabled()) {
 					if (commentRet > 0) {
 						log.debug("Activity published successfully. "
-								+ " Activity ID: " + id + " TargetID: "
+								+ " Activity ID: " + foreign_key + " TargetID: "
 								+ targetId + " JSON: " + json);
 					} else {
-						log.debug(ErrorStr + " Activity ID: " + id
+						log.debug(ErrorStr + " Activity ID: " + foreign_key
 								+ " TargetID: " + targetId + " JSON: " + json);
 					}
 				}
@@ -386,7 +392,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		} catch (SQLException e) {
 			log.error("Error while removing like activity from the table: "
 					+ Constants.SOCIAL_LIKES_TABLE_NAME + e);
-		} 
+		}
 	}
 
 	private void insertLikeActivity(SQLActivity activity, int likeValue,
@@ -395,19 +401,19 @@ public class SQLActivityPublisher extends ActivityPublisher {
 		String targetId = activity.getTargetId();
 		String actor = activity.getActorId();
 		int timestamp = activity.getTimestamp();
-		String id = activity.getId();
+		//String id = activity.getId();
 		String tenantDomain = SocialUtil.getTenantDomain();
 
 		try {
 			// INSERT LIKE activity to LIKES TABLE
 			insertActivityStatement = connection
 					.prepareStatement(INSERT_LIKE_SQL);
-			insertActivityStatement.setString(1, id);
-			insertActivityStatement.setString(2, targetId);
-			insertActivityStatement.setString(3, actor);
-			insertActivityStatement.setString(4, tenantDomain);
-			insertActivityStatement.setInt(5, likeValue);
-			insertActivityStatement.setInt(6, timestamp);
+			//insertActivityStatement.setString(1, id);
+			insertActivityStatement.setString(1, targetId);
+			insertActivityStatement.setString(2, actor);
+			insertActivityStatement.setString(3, tenantDomain);
+			insertActivityStatement.setInt(4, likeValue);
+			insertActivityStatement.setInt(5, timestamp);
 			insertActivityStatement.executeUpdate();
 		} catch (SQLException e) {
 			log.error("Error while adding like activity to the table: "
@@ -462,7 +468,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			}
 		} catch (SQLException e) {
 			log.error("Unable to update the cache. " + e);
-		} 
+		}
 	}
 
 	@Override
@@ -579,7 +585,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			}
 		} catch (SQLException e) {
 			log.error("Unable to update the rating cache. " + e);
-		} 
+		}
 
 	}
 

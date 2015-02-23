@@ -103,4 +103,10 @@ public class SQLActivity implements Activity {
 		dislikes.addProperty("totalItems", dislikeCount);
 		
 	}
+	
+	@Override
+	public void setId(int id) {
+		JsonObject object = (JsonObject) this.body.get("object");
+		object.addProperty("id", id);
+	}
 }

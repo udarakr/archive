@@ -58,14 +58,14 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	 */
 
 	public static final String COMMENT_SELECT_SQL_DESC = "SELECT "
-			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
 			+ Constants.TIMESTAMP + " DESC LIMIT ?,?";
 
 	public static final String COMMENT_SELECT_SQL_ASC = "SELECT "
-			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
@@ -94,7 +94,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ " =? AND " + Constants.LIKE_VALUE_COLUMN + " =?";
 
 	public static final String POPULAR_COMMENTS_SELECT_SQL = "SELECT "
-			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? ORDER BY "
@@ -213,7 +213,9 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			while (resultSet.next()) {
 				JsonObject body = (JsonObject) parser.parse(resultSet
 						.getString(Constants.BODY_COLUMN));
+				int id = resultSet.getInt(Constants.ID_COLUMN);
 				Activity activity = new SQLActivity(body);
+				activity.setId(id);
 				activities.add(activity);
 			}
 			resultSet.close();
