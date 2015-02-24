@@ -62,14 +62,14 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
-			+ Constants.TIMESTAMP + " DESC LIMIT ?,?";
+			+ Constants.ID_COLUMN + " DESC LIMIT ?,?";
 
 	public static final String COMMENT_SELECT_SQL_ASC = "SELECT "
 			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "=? " + "ORDER BY "
-			+ Constants.TIMESTAMP + " ASC LIMIT ?,?";
+			+ Constants.ID_COLUMN + " ASC LIMIT ?,?";
 
 	public static final String SELECT_CACHE_SQL = "SELECT "
 			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
@@ -101,11 +101,11 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.LIKES_COLUMN + " DESC LIMIT ?,?";
 
 	public static final String POLL_COMMENTS_SQL = "SELECT "
-			+ Constants.BODY_COLUMN + " FROM "
+			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "=? AND "
-			+ Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.TIMESTAMP
-			+ " >? OREDR BY " + Constants.TIMESTAMP + " DESC";
+			+ Constants.TENANT_DOMAIN_COLUMN + "=? AND " + Constants.ID_COLUMN
+			+ " >? OREDR BY " + Constants.ID_COLUMN + " DESC";
 
 	private JsonParser parser = new JsonParser();
 
@@ -338,8 +338,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			jsonObj.add(Constants.COMMENTS, comments);
 
 			if (resultSet.next()) {
-				String body = resultSet.getString(Constants.BODY_COLUMN);
-				comments.add((JsonElement) parser.parse(body));
+				JsonObject body = (JsonObject) parser.parse(resultSet
+						.getString(Constants.BODY_COLUMN));
+				int id = resultSet.getInt(Constants.ID_COLUMN);
+				Activity activity = new SQLActivity(body);
+				activity.setId(id);
+				comments.add(activity.getBody());
 			}
 			resultSet.close();
 		} catch (SQLException e) {
@@ -392,7 +396,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	}
 
 	@Override
-	public JsonObject pollNewestComments(String targetId, int timestamp) {
+	public JsonObject pollNewestComments(String targetId, int id) {
 		DSConnection con = new DSConnection();
 		Connection connection = con.getConnection();
 
@@ -411,13 +415,17 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		try {
 			statement = connection.prepareStatement(POLL_COMMENTS_SQL);
 			statement.setString(1, targetId);
-			statement.setInt(2, timestamp);
+			statement.setInt(2, id);
 			resultSet = statement.executeQuery();
 			jsonObj.add(Constants.COMMENTS, comments);
 
 			if (resultSet.next()) {
-				String body = resultSet.getString(Constants.BODY_COLUMN);
-				comments.add((JsonElement) parser.parse(body));
+				JsonObject body = (JsonObject) parser.parse(resultSet
+						.getString(Constants.BODY_COLUMN));
+				int activityId = resultSet.getInt(Constants.ID_COLUMN);
+				Activity activity = new SQLActivity(body);
+				activity.setId(activityId);
+				comments.add(activity.getBody());
 			}
 			resultSet.close();
 		} catch (SQLException e) {
