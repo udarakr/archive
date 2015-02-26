@@ -164,6 +164,20 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	public static final String DELETE_LIKES_SQL = "DELETE FROM "
 			+ Constants.SOCIAL_LIKES_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + " =?";
+	
+	
+	/*
+	 * UPDATE data_table t, (SELECT DISTINCT ID, NAME, VALUE
+                        FROM data_table
+                       WHERE VALUE IS NOT NULL AND VALUE != '') t1
+   SET t.VALUE = t1.VALUE
+ WHERE t.ID = t1.ID
+   AND t.NAME = t1.NAME
+   
+   UPDATE SOCIAL_COMMENTS sc, (SELECT BODY, LIKES, UNLIKES FROM SOCIAL_COMMENTS WHERE ID=?)sc1
+   SET sc.BODY = ?, sc.LIKES = sc1.Likes+?, sc.UNLIKES = sc1.UNLIKES =?
+	 * 
+	 * */
 
 	private JsonParser parser = new JsonParser();
 
@@ -299,12 +313,12 @@ public class SQLActivityPublisher extends ActivityPublisher {
 				String verb = activity.getVerb();
 				int likeValue;
 				// target of a like activity is a comment
-				String commentID = activity.getTargetId();
+				int commentID = Integer.parseInt(activity.getTargetId());
 				// ResultSet commentResultSet = getCommentResultSet(commentID);
 
 				selectActivityStatement = connection
 						.prepareStatement(COMMENT_ACTIVITY_SELECT_FOR_UPDATE_SQL);
-				selectActivityStatement.setString(1, commentID);
+				selectActivityStatement.setInt(1, commentID);
 				resultSet = selectActivityStatement.executeQuery();
 
 				if (resultSet.next()) {
@@ -354,7 +368,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 					updateActivityStatement.setString(1, json.toString());
 					updateActivityStatement.setInt(2, likeCount);
 					updateActivityStatement.setInt(3, dislikeCount);
-					updateActivityStatement.setString(4, commentID);
+					updateActivityStatement.setInt(4, commentID);
 					updateActivityStatement.executeUpdate();
 					connection.commit();
 				}
@@ -377,7 +391,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 
 	private void removeLikeActivity(SQLActivity activity, Connection connection) {
 		PreparedStatement deleteActivityStatement = null;
-		String targetId = activity.getTargetId();
+		int targetId = Integer.parseInt(activity.getTargetId());
 		String actor = activity.getActorId();
 
 		try {
@@ -385,7 +399,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			// user_id=?;
 			deleteActivityStatement = connection
 					.prepareStatement(DELETE_LIKE_ACTIVITY);
-			deleteActivityStatement.setString(1, targetId);
+			deleteActivityStatement.setInt(1, targetId);
 			deleteActivityStatement.setString(2, actor);
 			deleteActivityStatement.executeUpdate();
 
@@ -398,7 +412,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 	private void insertLikeActivity(SQLActivity activity, int likeValue,
 			Connection connection) {
 		PreparedStatement insertActivityStatement = null;
-		String targetId = activity.getTargetId();
+		int targetId = Integer.parseInt(activity.getTargetId());
 		String actor = activity.getActorId();
 		int timestamp = activity.getTimestamp();
 		//String id = activity.getId();
@@ -409,7 +423,7 @@ public class SQLActivityPublisher extends ActivityPublisher {
 			insertActivityStatement = connection
 					.prepareStatement(INSERT_LIKE_SQL);
 			//insertActivityStatement.setString(1, id);
-			insertActivityStatement.setString(1, targetId);
+			insertActivityStatement.setInt(1, targetId);
 			insertActivityStatement.setString(2, actor);
 			insertActivityStatement.setString(3, tenantDomain);
 			insertActivityStatement.setInt(4, likeValue);
