@@ -18,31 +18,47 @@
 
 package org.wso2.carbon.social.core;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.social.sql.SQLActivityException;
+import org.wso2.carbon.social.sql.SQLActivityPublisher;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
 //import java.util.UUID;
 
 public abstract class ActivityPublisher {
 	
+	private static final Log log = LogFactory
+			.getLog(SQLActivityPublisher.class);
+	
 	private JsonParser parser = new JsonParser();
 	
-	public String publish(String activity) {
-		
-		JsonObject jsonObject = (JsonObject)parser.parse(activity);
-		
-		//String id = UUID.randomUUID().toString();
-		String unixTimestamp = Long.toString(System.currentTimeMillis() / 1000L);
-		
-		//JsonObject object = (JsonObject) jsonObject.get("object");
-		//object.add(Constants.ID, (JsonElement)parser.parse(id));
-		jsonObject.add(Constants.PUBLISHED, (JsonElement) parser.parse(unixTimestamp));
-		
+	public long publish(String activity) throws JsonSyntaxException {
+		JsonObject jsonObject;
+		String unixTimestamp = Long
+				.toString(System.currentTimeMillis() / 1000L);
+		try {
+			jsonObject = (JsonObject) parser.parse(activity);
+			jsonObject.add(Constants.PUBLISHED,
+					(JsonElement) parser.parse(unixTimestamp));
+		} catch (JsonSyntaxException e) {
+			log.error("Malformed JSON element found: " + e.getMessage(), e);
+			throw e;
+		}
+		// TODO keep UUID and expose UUID to outside
+		// String id = UUID.randomUUID().toString();
+		// JsonObject object = (JsonObject) jsonObject.get("object");
+		// object.add(Constants.ID, (JsonElement)parser.parse(id));
+
+
 		return publishActivity(jsonObject);
 	}
 
-	protected abstract String publishActivity(JsonObject activity);
+	protected abstract long publishActivity(JsonObject activity);
 
-	public abstract boolean remove(String activityId);
+	public abstract boolean remove(String activityId, String userId) throws SQLActivityException;
 }

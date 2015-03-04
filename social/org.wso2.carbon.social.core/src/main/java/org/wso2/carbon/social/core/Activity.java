@@ -29,7 +29,7 @@ public interface Activity {
 
     String getActorId();
 
-    String getTargetId();
+    int getTargetId();
 
     int getLikeCount();
 
