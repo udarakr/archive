@@ -20,8 +20,6 @@ package org.wso2.carbon.social.core;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.social.sql.SQLActivityException;
-import org.wso2.carbon.social.sql.SQLActivityPublisher;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -33,11 +31,11 @@ import com.google.gson.JsonSyntaxException;
 public abstract class ActivityPublisher {
 	
 	private static final Log log = LogFactory
-			.getLog(SQLActivityPublisher.class);
+			.getLog(ActivityPublisher.class);
 	
 	private JsonParser parser = new JsonParser();
 	
-	public long publish(String activity) throws JsonSyntaxException {
+	public long publish(String activity) throws SocialActivityException {
 		JsonObject jsonObject;
 		String unixTimestamp = Long
 				.toString(System.currentTimeMillis() / 1000L);
@@ -46,8 +44,9 @@ public abstract class ActivityPublisher {
 			jsonObject.add(Constants.PUBLISHED,
 					(JsonElement) parser.parse(unixTimestamp));
 		} catch (JsonSyntaxException e) {
-			log.error("Malformed JSON element found: " + e.getMessage(), e);
-			throw e;
+			String message = "Malformed JSON element found: " + e.getMessage();
+			log.error(message, e);
+			throw new SocialActivityException(message, e);
 		}
 		// TODO keep UUID and expose UUID to outside
 		// String id = UUID.randomUUID().toString();
@@ -58,7 +57,7 @@ public abstract class ActivityPublisher {
 		return publishActivity(jsonObject);
 	}
 
-	protected abstract long publishActivity(JsonObject activity);
+	protected abstract long publishActivity(JsonObject activity) throws SocialActivityException;
 
-	public abstract boolean remove(String activityId, String userId) throws SQLActivityException;
+	public abstract boolean remove(String activityId, String userId) throws SocialActivityException;
 }

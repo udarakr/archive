@@ -52,9 +52,9 @@ public class SQLActivity implements Activity {
 	}
 
 	@Override
-	public int getTargetId() {
+	public String getTargetId() {
 		JsonObject target = (JsonObject)this.body.get("target");
-		return target.get("id").getAsInt();
+		return target.get("id").getAsString();
 	}
 
 	@Override
