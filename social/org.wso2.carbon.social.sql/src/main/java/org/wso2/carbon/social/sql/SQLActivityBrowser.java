@@ -44,7 +44,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	private static final Log log = LogFactory.getLog(SQLActivityBrowser.class);
 
 	//TODO think about oracle and other db support
-	public static final String COMMENT_SELECT_SQL_DESC = "SELECT "
+	/*public static final String COMMENT_SELECT_SQL_DESC = "SELECT "
 			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "= ? AND "
@@ -57,6 +57,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.CONTEXT_ID_COLUMN + "= ? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "= ? " + "ORDER BY "
 			+ Constants.ID_COLUMN + " ASC LIMIT ?,?";
+			*/
 
 	public static final String SELECT_CACHE_SQL = "SELECT "
 			+ Constants.RATING_TOTAL + "," + Constants.RATING_COUNT + " FROM "
@@ -80,12 +81,12 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ Constants.USER_COLUMN + " = ? AND " + Constants.CONTEXT_ID_COLUMN
 			+ " = ? AND " + Constants.LIKE_VALUE_COLUMN + " = ?";
 
-	public static final String POPULAR_COMMENTS_SELECT_SQL = "SELECT "
+	/*public static final String POPULAR_COMMENTS_SELECT_SQL = "SELECT "
 			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
 			+ Constants.SOCIAL_COMMENTS_TABLE_NAME + " WHERE "
 			+ Constants.CONTEXT_ID_COLUMN + "= ? AND "
 			+ Constants.TENANT_DOMAIN_COLUMN + "= ? ORDER BY "
-			+ Constants.LIKES_COLUMN + " DESC LIMIT ?,?";
+			+ Constants.LIKES_COLUMN + " DESC LIMIT ?,?";*/
 
 	public static final String POLL_COMMENTS_SQL = "SELECT "
 			+ Constants.BODY_COLUMN + ", " + Constants.ID_COLUMN + " FROM "
@@ -223,25 +224,26 @@ public class SQLActivityBrowser implements ActivityBrowser {
 
 	private String getSelectquery(Connection connection, String order) throws SocialActivityException {
 		String SQL;
+		String type = "select";
 		if ("NEWEST".equals(order)) {
 			if (selectSQLDesc == null) {
 				//TODO remove info log
 				log.info("selectSQLDesc not found. setting up.. ");
-				selectSQLDesc= SocialUtil.getSelectSQL(connection, order);
+				selectSQLDesc= SocialUtil.getSelectSQL(connection, order, type);
 			}
 			SQL = selectSQLDesc;
 		} else if ("OLDEST".equals(order)) {
 			if (selectSQLAsc == null) {
 				//TODO remove info log
 				log.info("selectSQLAsc not found. setting up.. ");
-				selectSQLAsc = SocialUtil.getSelectSQL(connection, order);
+				selectSQLAsc = SocialUtil.getSelectSQL(connection, order, type);
 			}
 			SQL = selectSQLAsc;
 		} else {
 			if (selectSQLPopular == null) {
 				//TODO remove info log
 				log.info("selectSQLPopular not found. setting up.. ");
-				selectSQLPopular = SocialUtil.getSelectSQL(connection, order);
+				selectSQLPopular = SocialUtil.getSelectSQL(connection, order, type);
 			}
 			SQL = selectSQLPopular;
 		}
