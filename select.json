@@ -1,0 +1,17 @@
+{"h2": {
+  "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
+  "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
+  "POPULAR" : "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;"
+},
+"mysql" :{
+  "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
+  "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
+  "POPULAR" : "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;"
+},
+"oracle" :{
+  "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
+  "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
+  "POPULAR" : "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;"
+}
+}
+

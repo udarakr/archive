@@ -95,7 +95,11 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			+ " > ? OREDR BY " + Constants.ID_COLUMN + " DESC";
 
 	private JsonParser parser = new JsonParser();
-
+	
+	private static String selectSQLDesc = null;
+	private static String selectSQLAsc = null;
+	private static String selectSQLPopular = null;
+	
 	@Override
 	public JsonObject getRating(String targetId) throws SocialActivityException {
 		Connection connection = null;
@@ -172,20 +176,14 @@ public class SQLActivityBrowser implements ActivityBrowser {
 		limit = SocialUtil.getActivityLimit(limit);
 		String errorMsg = "Unable to retrieve activities. ";
 		String SQL;
-
-		if ("NEWEST".equals(order)) {
-			SQL = COMMENT_SELECT_SQL_DESC;
-		} else if ("OLDEST".equals(order)) {
-			SQL = COMMENT_SELECT_SQL_ASC;
-		} else {
-			SQL = POPULAR_COMMENTS_SELECT_SQL;
-		}
-
+		
 		try {
+			connection = DSConnection.getConnection();
+			SQL = getSelectquery(connection, order);
+			
 			if (log.isDebugEnabled()) {
 				log.debug("Executing: " + SQL);
-			}
-			connection = DSConnection.getConnection();
+			}			
 			statement = connection.prepareStatement(SQL);
 
 			statement.setString(1, targetId);
@@ -221,6 +219,33 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			return Collections.emptyList();
 		}*/
 		return activities;
+	}
+
+	private String getSelectquery(Connection connection, String order) throws SocialActivityException {
+		String SQL;
+		if ("NEWEST".equals(order)) {
+			if (selectSQLDesc == null) {
+				//TODO remove info log
+				log.info("selectSQLDesc not found. setting up.. ");
+				selectSQLDesc= SocialUtil.getSelectSQL(connection, order);
+			}
+			SQL = selectSQLDesc;
+		} else if ("OLDEST".equals(order)) {
+			if (selectSQLAsc == null) {
+				//TODO remove info log
+				log.info("selectSQLAsc not found. setting up.. ");
+				selectSQLAsc = SocialUtil.getSelectSQL(connection, order);
+			}
+			SQL = selectSQLAsc;
+		} else {
+			if (selectSQLPopular == null) {
+				//TODO remove info log
+				log.info("selectSQLPopular not found. setting up.. ");
+				selectSQLPopular = SocialUtil.getSelectSQL(connection, order);
+			}
+			SQL = selectSQLPopular;
+		}
+		return SQL;
 	}
 
 	/*@Override
