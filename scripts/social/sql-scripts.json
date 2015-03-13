@@ -22,7 +22,7 @@
 		"SOCIAL_LIKES" : "INSERT INTO SOCIAL_LIKES (payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(?, ?, ?, ?, ?);"
 		},
 	"create": {
-		"sp" :"CREATE PROCEDURE activity_pagin(IN i_payload_context_id VARCHAR(50),IN i_tenant_domain VARCHAR(100),IN i_order_val VARCHAR(50),IN i_order_sql VARCHAR(100),IN i_lim_val INT,IN i_lim_offset INT) BEGIN SELECT * FROM SOCIAL_COMMENTS WHERE payload_context_id=i_payload_context_id AND tenant_domain=i_tenant_domain ORDER BY CASE WHEN i_order_sql='desc' THEN id END DESC,CASE WHEN i_order_sql='asc' THEN id END ASC LIMIT i_lim_val OFFSET i_lim_offset; END"}
+		"sp" :"CREATE PROCEDURE activity_pagin(IN i_payload_context_id VARCHAR(50),IN i_tenant_domain VARCHAR(100),IN i_order_val VARCHAR(50),IN i_lim_val INT,IN i_lim_offset INT) BEGIN SELECT * FROM SOCIAL_COMMENTS WHERE payload_context_id=i_payload_context_id AND tenant_domain=i_tenant_domain ORDER BY CASE WHEN i_order_val='NEWEST' THEN id END DESC,CASE WHEN i_order_val='OLDEST' THEN id END ASC,CASE WHEN i_order_val='POPULAR' THEN likes END desc LIMIT i_lim_val OFFSET i_lim_offset; END"}
 	
 		
 		
