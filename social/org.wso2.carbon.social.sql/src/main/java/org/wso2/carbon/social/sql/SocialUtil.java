@@ -74,7 +74,13 @@ public class SocialUtil {
 			JsonObject selectSQLObject = (JsonObject) jsonObject.get(queryType);
 			String sql = selectSQLObject.get(key).getAsString();
 
-			return sql;
+			if (sql != null) {
+				return sql;
+			} else {
+				throw new SocialActivityException(
+						"Unable to locate the query related to, type: "
+								+ queryType + " key: " + key);
+			}
 
 		} catch (FileNotFoundException e) {
 			log.error(e.getMessage());

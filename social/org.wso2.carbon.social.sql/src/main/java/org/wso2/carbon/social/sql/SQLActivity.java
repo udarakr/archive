@@ -44,6 +44,11 @@ public class SQLActivity implements Activity {
 	public int getTimestamp() {
 		return this.body.get("published").getAsInt();
 	}
+	
+	@Override
+	public String getUuid() {
+		return this.body.get("uuid").getAsString();
+	}
 
 	@Override
 	public String getActorId() {

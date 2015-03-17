@@ -20,9 +20,11 @@ package org.wso2.carbon.social.sql;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.social.core.SocialActivityException;
 import org.wso2.carbon.social.sql.Constants;
 
 import javax.sql.DataSource;
+
 import java.io.*;
 import java.sql.*;
 import java.util.StringTokenizer;
@@ -54,6 +56,7 @@ public class SocialDBInitilizer {
 				executeSQLScript();
 				conn.commit();
 				log.info("SOCIAL DB tables created successfully.");
+				executeStoredProcedure();
 			} catch (SQLException e) {
 				String msg = "Failed to create database tables for SOCIAL. "
 						+ e.getMessage();
@@ -71,6 +74,27 @@ public class SocialDBInitilizer {
 		}else{
 			log.info("Social database already exists. Not creating a new database.");
 		}
+	}
+
+	private void executeStoredProcedure() {
+		Connection conn = null;
+		Statement stmt = null;
+		try {
+			conn = dataSource.getConnection();
+			conn.setAutoCommit(false);
+			String query = SocialUtil.getSelectSQL(conn, "sp", "create");
+			stmt = conn.createStatement();
+			stmt.executeUpdate(query);
+			
+		} catch (SocialActivityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 
 	private void executeSQLScript() throws Exception {
