@@ -1,7 +1,6 @@
-CREATE PROCEDURE activity_pagin (IN i_payload_context_id VARCHAR2(50), IN i_tenant_domain VARCHAR2(100),IN i_order_val VARCHAR2(50),IN i_lim_val NUMBER(19, 0),IN i_lim_offset NUMBER(19, 0), OUT SYS_REFCURSOR)
-IS
-BEGIN
-SELECT a.*
+CREATE PROCEDURE remove_emp (i_payload_context_id IN VARCHAR2, i_tenant_domain IN VARCHAR2, i_order_val IN VARCHAR2, i_lim_val IN NUMBER, i_lim_offset IN NUMBER, activity_cursor OUT SYS_REFCURSOR) AS
+   BEGIN
+	SELECT a.*
   FROM (SELECT b.*,
                rownum b_rownum
           FROM (SELECT c.*
@@ -9,4 +8,5 @@ SELECT a.*
                  ORDER BY id DESC) b
          WHERE rownum <= 10) a
 WHERE b_rownum >= 0 || '%';
-END
+   END;
+/
