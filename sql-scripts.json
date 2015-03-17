@@ -1,40 +1,51 @@
-{"h2": {
-	"select" : {
-		  "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
-		  "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
-		  "POPULAR" : "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;"
-		},
-	"insert" :{
-		"SOCIAL_COMMENTS" : "INSERT INTO SOCIAL_COMMENTS (body,payload_context_id,user_id,tenant_domain,likes,unlikes,timestamp) VALUES(?, ?, ?, ?, ?, ?, ?);",
-		"SOCIAL_RATING" : "INSERT INTO SOCIAL_RATING (comment_id,payload_context_id,user_id,tenant_domain,rating,timestamp) VALUES (?, ?, ?, ?, ?, ?);",		
-		"SOCIAL_LIKES" : "INSERT INTO SOCIAL_LIKES (payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(?, ?, ?, ?, ?);"
-		}
-},
-"mysql" :{
- 	"select" : {
-		  "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
-		  "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
-		  "POPULAR" : "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;"
-		},
-	"insert" :{
-		"SOCIAL_COMMENTS" : "INSERT INTO SOCIAL_COMMENTS (body,payload_context_id,user_id,tenant_domain,likes,unlikes,timestamp) VALUES(?, ?, ?, ?, ?, ?, ?);",
-		"SOCIAL_RATING" : "INSERT INTO SOCIAL_RATING (comment_id,payload_context_id,user_id,tenant_domain,rating,timestamp) VALUES (?, ?, ?, ?, ?, ?);",		
-		"SOCIAL_LIKES" : "INSERT INTO SOCIAL_LIKES (payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(?, ?, ?, ?, ?);"
-		}
-},
-"oracle" :{
-	"select" : {
-		  "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
-		  "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
-		  "POPULAR" : "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;"
-		},
-	"insert" :{
-		"SOCIAL_COMMENTS" : "INSERT INTO SOCIAL_COMMENTS (id,body,payload_context_id,user_id,tenant_domain,likes,unlikes,timestamp) VALUES(SOCIAL_COMMENTS_SEQUENCE.nextval,?, ?, ?, ?, ?, ?, ?)",
-		"SOCIAL_RATING" : "INSERT INTO SOCIAL_RATING (id,comment_id,payload_context_id,user_id,tenant_domain,rating,timestamp) VALUES (SOCIAL_RATING_SEQUENCE.nextval, ?, ?, ?, ?, ?, ?)",		
-		"SOCIAL_LIKES" : "INSERT INTO SOCIAL_LIKES (id,payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(SOCIAL_LIKES_SEQUENCE.nextval, ?, ?, ?, ?, ?)"
-		}
-}
-}
 
+
+{
+  "h2": {
+    "select": {
+      "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
+      "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
+      "POPULAR": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;",
+      "SP": "{call activity_pagin(?, ?, ?, ?, ?)}"
+    },
+    "insert": {
+      "SOCIAL_COMMENTS": "INSERT INTO SOCIAL_COMMENTS (body,payload_context_id,user_id,tenant_domain,likes,unlikes,timestamp) VALUES(?, ?, ?, ?, ?, ?, ?);",
+      "SOCIAL_RATING": "INSERT INTO SOCIAL_RATING (comment_id,payload_context_id,user_id,tenant_domain,rating,timestamp) VALUES (?, ?, ?, ?, ?, ?);",
+      "SOCIAL_LIKES": "INSERT INTO SOCIAL_LIKES (payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(?, ?, ?, ?, ?);"
+    }
+  },
+  "mysql": {
+    "select": {
+      "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
+      "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
+      "POPULAR": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;",
+      "SP": "{call activity_pagin(?, ?, ?, ?, ?)}"
+    },
+    "insert": {
+      "SOCIAL_COMMENTS": "INSERT INTO SOCIAL_COMMENTS (body,payload_context_id,user_id,tenant_domain,likes,unlikes,timestamp) VALUES(?, ?, ?, ?, ?, ?, ?);",
+      "SOCIAL_RATING": "INSERT INTO SOCIAL_RATING (comment_id,payload_context_id,user_id,tenant_domain,rating,timestamp) VALUES (?, ?, ?, ?, ?, ?);",
+      "SOCIAL_LIKES": "INSERT INTO SOCIAL_LIKES (payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(?, ?, ?, ?, ?);"
+    },
+    "create": {
+      "sp": "CREATE PROCEDURE activity_pagin(IN i_payload_context_id VARCHAR(50),IN i_tenant_domain VARCHAR(100),IN i_order_val VARCHAR(50),IN i_lim_val INT,IN i_lim_offset INT) BEGIN SELECT * FROM SOCIAL_COMMENTS WHERE payload_context_id=i_payload_context_id AND tenant_domain=i_tenant_domain ORDER BY CASE WHEN i_order_val='NEWEST' THEN id END DESC,CASE WHEN i_order_val='OLDEST' THEN id END ASC,CASE WHEN i_order_val='POPULAR' THEN likes END desc LIMIT i_lim_val OFFSET i_lim_offset; END"
+    }
+  },
+  "oracle": {
+    "select": {
+      "NEWEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id DESC LIMIT ?,?;",
+      "OLDEST": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY id ASC LIMIT ?,?;",
+      "POPULAR": "SELECT body, id FROM SOCIAL_COMMENTS WHERE payload_context_id=? AND tenant_domain=? ORDER BY likes DESC LIMIT ?,?;",
+      "SP": "{call ? := activity_pagin(?, ?, ?, ?, ?)}"
+    },
+    "insert": {
+      "SOCIAL_COMMENTS": "INSERT INTO SOCIAL_COMMENTS (id,body,payload_context_id,user_id,tenant_domain,likes,unlikes,timestamp) VALUES(SOCIAL_COMMENTS_SEQUENCE.nextval,?, ?, ?, ?, ?, ?, ?)",
+      "SOCIAL_RATING": "INSERT INTO SOCIAL_RATING (id,comment_id,payload_context_id,user_id,tenant_domain,rating,timestamp) VALUES (SOCIAL_RATING_SEQUENCE.nextval, ?, ?, ?, ?, ?, ?)",
+      "SOCIAL_LIKES": "INSERT INTO SOCIAL_LIKES (id,payload_context_id,user_id,tenant_domain,like_value,timestamp) VALUES(SOCIAL_LIKES_SEQUENCE.nextval, ?, ?, ?, ?, ?)"
+    },
+    "create": {
+      "sp": "CREATE PROCEDURE activity_pagin(IN i_payload_context_id VARCHAR2(50), IN i_tenant_domain VARCHAR2(100),IN i_order_val VARCHAR2(50),IN i_lim_val NUMBER(19, 0),IN i_lim_offset NUMBER(19, 0)) BEGIN SELECT * FROM (SELECT b.*, ROWNUM RN FROM (SELECT * FROM SOCIAL_COMMENTS ORDER BY CASE WHEN i_order_val='NEWEST' THEN id END DESC, CASE WHEN i_order_val='OLDEST' THEN id END ASC,CASE WHEN i_order_val='POPULAR' THEN likes END DESC) b WHERE ROWNUM <= i_lim_val)WHERE RN > i_lim_offset END"
+    }
+  }
+}
 
 
