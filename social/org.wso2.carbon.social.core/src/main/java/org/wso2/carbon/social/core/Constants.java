@@ -21,5 +21,6 @@ package org.wso2.carbon.social.core;
 public class Constants {
 	public static final String ID = "id";
 	public static final String PUBLISHED = "published";
+	public static final String UUID = "uuid";
 
 }

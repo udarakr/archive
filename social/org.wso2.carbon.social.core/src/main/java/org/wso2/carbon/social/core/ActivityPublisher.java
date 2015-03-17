@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.social.core;
 
+import java.util.UUID;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -49,9 +51,9 @@ public abstract class ActivityPublisher {
 			throw new SocialActivityException(message, e);
 		}
 		// TODO keep UUID and expose UUID to outside
-		// String id = UUID.randomUUID().toString();
+		String id = UUID.randomUUID().toString();
 		// JsonObject object = (JsonObject) jsonObject.get("object");
-		// object.add(Constants.ID, (JsonElement)parser.parse(id));
+		jsonObject.add(Constants.UUID, (JsonElement)parser.parse(id));
 
 
 		return publishActivity(jsonObject);

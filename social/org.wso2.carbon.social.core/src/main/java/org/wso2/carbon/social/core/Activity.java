@@ -47,4 +47,6 @@ public interface Activity {
 
 	void setId(int id);
 
+	String getUuid();
+
 }
