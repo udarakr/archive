@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.social.sql.internal;
 
+import java.io.IOException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.framework.BundleContext;
@@ -26,6 +28,7 @@ import org.wso2.carbon.ndatasource.core.DataSourceService;
 import org.wso2.carbon.social.sql.service.SQLActivityService;
 import org.wso2.carbon.social.core.service.SocialActivityService;
 import org.wso2.carbon.social.sql.JDBCPersistenceManager;
+import org.wso2.carbon.social.sql.SocialUtil;
 
 /**
  * Registering {@link SocialActivityService}
@@ -47,6 +50,13 @@ public class SQLSocialComponent {
 				new SQLActivityService(), null);
 		if (log.isDebugEnabled()) {
 			log.debug("Social Activity service is activated  with SQL Implementation");
+		}
+		//TODO remove following info log
+		try {
+			log.info("Social Implementation initialized with: " + SocialUtil.getSocialAdaptorImplClass());
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 
 			//String cmd = System.getProperty(Constants.SETUP_CMD);
