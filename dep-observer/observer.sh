@@ -4,11 +4,11 @@ tail -fn0 /home/udara/wso2/git/wso2/fresh/product-es/modules/distribution/target
         echo "$line" | grep "Deployed webapp"
         if [ $? = 0 ]
             then
-             echo 1 > /dev/ttyUSB0 # New webapp deplyed
+             echo 1 > /dev/ttyACM0 # New webapp deployed
         fi
         echo "$line" | grep "Undeployed webapp"
         if [ $? = 0 ]
             then
-              echo 0 > /dev/ttyUSB0 # webapp undeplyed
+              echo 0 > /dev/ttyACM0 # webapp undeployed
         fi
 done
