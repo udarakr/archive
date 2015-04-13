@@ -18,23 +18,24 @@
 
 package org.wso2.carbon.social.sql;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.sql.Connection;
+import java.io.IOException;
+import java.io.InputStream;
 
+import javax.xml.namespace.QName;
+
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMXMLBuilderFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.social.core.SocialActivityException;
-
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import org.wso2.carbon.utils.CarbonUtils;
 
 public class SocialUtil {
 	private static final Log log = LogFactory.getLog(SocialUtil.class);
-	private static JsonParser parser = new JsonParser();
 
 	public static String getTenantDomain() {
 		String tenantDomainName = CarbonContext.getThreadLocalCarbonContext()
@@ -64,61 +65,74 @@ public class SocialUtil {
 			return null;
 		}
 	}
-	
-	public static String getSelectSQL(Connection connection, String key, String queryType)
- throws SocialActivityException {
 
+	public static String getSocialAdaptorImplClass() throws IOException {
+		String configPath = CarbonUtils.getCarbonHome() + File.separator
+				+ "repository" + File.separator + "conf" + File.separator
+				+ "social.xml";
+		File socialXML = new File(configPath);
 		try {
+			InputStream inStream = new FileInputStream(socialXML);
+			OMElement root = OMXMLBuilderFactory.createOMBuilder(inStream)
+					.getDocumentElement();
 
-			JsonObject jsonObject = readJson(connection);
-			JsonObject selectSQLObject = (JsonObject) jsonObject.get(queryType);
-			String sql = selectSQLObject.get(key).getAsString();
-
-			if (sql != null) {
-				return sql;
+			// Process the content of the file
+			OMElement QueryAdaptorClass = root.getFirstChildWithName(new QName(
+					"QueryAdaptorClass"));
+			if (QueryAdaptorClass == null) {
+				log.info("No <QueryAdaptorClass> element found");
 			} else {
-				throw new SocialActivityException(
-						"Unable to locate the query related to, type: "
-								+ queryType + " key: " + key);
+				log.info("url = " + QueryAdaptorClass.getText());
 			}
 
+			inStream.close();
+			return QueryAdaptorClass.getText();
+
 		} catch (FileNotFoundException e) {
-			log.error(e.getMessage());
-			throw new SocialActivityException(e.getMessage(), e);
-		} catch (JsonIOException e) {
-			log.error(e.getMessage());
-			throw new SocialActivityException(e.getMessage(), e);
-		} catch (JsonSyntaxException e) {
-			log.error(e.getMessage());
-			throw new SocialActivityException(e.getMessage(), e);
-		} catch (Exception e) {
-			log.error(e.getMessage());
-			throw new SocialActivityException(e.getMessage(), e);
+			log.error("Unable to find the social.xml configuration file in "
+					+ configPath, e);
+			throw e;
+		} catch (IOException e) {
+			log.error("Error occured while reading the configuration file.", e);
+			throw e;
 		}
 	}
-	
-	private static JsonObject readJson(Connection connection)
-			throws SocialActivityException, JsonIOException,
-			JsonSyntaxException, FileNotFoundException {
-		String databaseType;
+
+	@SuppressWarnings("rawtypes")
+	public static Object getQueryAdaptorObject(Class cls)
+			throws SocialActivityException {
+		Object obj = null;
 		try {
-			databaseType = SocialDBInitilizer.getDatabaseType(connection);
-		} catch (Exception e) {
-			log.error(e.getMessage());
+			obj = cls.newInstance();
+			return obj;
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new SocialActivityException(e.getMessage(), e);
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 			throw new SocialActivityException(e.getMessage(), e);
 		}
-		if (log.isDebugEnabled()) {
-			log.debug("Loading select query for " + databaseType);
-		}
 
-		String carbonHome = System.getProperty("carbon.home");
-		String dbJsonLocation = carbonHome
-				+ "/dbscripts/social/sql-scripts.json";
-		Object obj = parser.parse(new FileReader(dbJsonLocation));
-		JsonObject jsonObject = (JsonObject) obj;
-		JsonObject dbTypeObject = (JsonObject) jsonObject.get(databaseType);
-		
-		return dbTypeObject;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public static Class loadQueryAdaptorClass() throws SocialActivityException {
+		Class<?> cls = null;
+
+		try {
+			cls = Class.forName(SocialUtil.getSocialAdaptorImplClass());
+			return cls;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new SocialActivityException(e.getMessage(), e);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new SocialActivityException(e.getMessage(), e);
+		}
 
 	}
 
