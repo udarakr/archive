@@ -18,10 +18,11 @@
 
 package org.wso2.carbon.social.core;
 
-import java.util.UUID;
+import java.sql.SQLException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.ndatasource.common.DataSourceException;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -51,9 +52,9 @@ public abstract class ActivityPublisher {
 			throw new SocialActivityException(message, e);
 		}
 		// TODO keep UUID and expose UUID to outside
-		String id = UUID.randomUUID().toString();
+		// String id = UUID.randomUUID().toString();
 		// JsonObject object = (JsonObject) jsonObject.get("object");
-		jsonObject.add(Constants.UUID, (JsonElement)parser.parse(id));
+		// object.add(Constants.ID, (JsonElement)parser.parse(id));
 
 
 		return publishActivity(jsonObject);
@@ -62,4 +63,6 @@ public abstract class ActivityPublisher {
 	protected abstract long publishActivity(JsonObject activity) throws SocialActivityException;
 
 	public abstract boolean remove(String activityId, String userId) throws SocialActivityException;
+
+	public abstract int warmUpRatingCache(String targetId) throws SocialActivityException;
 }
