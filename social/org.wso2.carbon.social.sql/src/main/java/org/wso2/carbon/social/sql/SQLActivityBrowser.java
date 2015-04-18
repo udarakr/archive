@@ -93,7 +93,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	 * Retrieve average rating of a target
 	 * 
 	 * @param targetId
-	 * @return JsonObject
+	 * @return average rating JsonObject 
 	 * @throws SocialActivityException 
 	 */
 	public JsonObject getRating(String targetId) throws SocialActivityException {
@@ -148,7 +148,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	 * @param order
 	 * @param offset
 	 * @param limit
-	 * @return JsonObject
+	 * @return activity JsonObject
 	 * @throws SocialActivityException 
 	 */
 	public JsonObject getSocialObject(String targetId, String order,
@@ -285,7 +285,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	 * 
 	 * @param avgRating
 	 * @param limit
-	 * @return JsonObject
+	 * @return top assets JsonObject
 	 * @throws SocialActivityException 
 	 */
 	public JsonObject getTopAssets(double avgRating, int limit)
@@ -348,7 +348,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	 * 
 	 * @param targetId
 	 * @param likes
-	 * @return JsonObject
+	 * @return top comments JsonObject
 	 * @throws SocialActivityException 
 	 */
 	public JsonObject getTopComments(String targetId, int likes)
@@ -371,7 +371,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			resultSet = statement.executeQuery();
 			jsonObj.add(Constants.COMMENTS, comments);
 
-			if (resultSet.next()) {
+			while (resultSet.next()) {
 				JsonObject body = (JsonObject) parser.parse(resultSet
 						.getString(Constants.BODY_COLUMN));
 				int id = resultSet.getInt(Constants.ID_COLUMN);
@@ -450,7 +450,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 	 * 
 	 * @param targetId
 	 * @param id
-	 * @return JsonObject
+	 * @return latest comments JsonObject
 	 * @throws SocialActivityException 
 	 */
 	public JsonObject pollNewestComments(String targetId, int id)
@@ -473,7 +473,7 @@ public class SQLActivityBrowser implements ActivityBrowser {
 			resultSet = statement.executeQuery();
 			jsonObj.add(Constants.COMMENTS, comments);
 
-			if (resultSet.next()) {
+			while (resultSet.next()) {
 				JsonObject body = (JsonObject) parser.parse(resultSet
 						.getString(Constants.BODY_COLUMN));
 				int activityId = resultSet.getInt(Constants.ID_COLUMN);
