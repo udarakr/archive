@@ -1,0 +1,38 @@
+{{#with assets}}
+	<div class="well asset-well">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-2">
+					{{#if thumbnail }}
+						<img src='{{url ""}}/storage/{{../rxt.shortName}}/{{id}}/{{thumbnail}}' class="" alt="Thumb"/>
+					{{else}}
+						<img src="{{url ""}}/extensions/assets/api/themes/default/imgs/api.png"/>
+					{{/if}}
+				</div>
+				<div class="col-lg-10">
+					<h1>{{name}}</h1>
+					<i class="fa fa-circle"></i> {{lifecycleState}}
+					<div class="well-description">{{tables.0.fields.createdtime.value}}</div>
+					<div class="well-description">{{tables.0.fields.description.value}}</div>
+					<div>
+						{{> asset-version-info .}}
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	{{#each tables}}
+		{{renderTablePreview .}}
+	{{/each}}
+
+	{{#if tags}}
+		<a data-toggle="collapse" href="#collapseTags" class="collapsing-h2"><h2>Tags</h2></a>
+		<div class="collapse" id="collapseTags">
+			{{#each tags}}
+				<span class="view-tag">{{this}}</span>
+			{{/each}}
+		</div>
+	{{/if}}
+{{/with}}
+
