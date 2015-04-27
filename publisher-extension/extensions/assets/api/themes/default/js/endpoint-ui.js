@@ -611,9 +611,11 @@ $(document).ready(function () {
     );
 
     APP.update_ep_config = function() {
+        alert("Updating endpoint_config: ");
         var ec = APP.ep_form.getValues();
         ec.endpoint_type = $('#endpoint_type').val();
-        $('.advance_endpoint_config').each(function(index, el){
+        /*$('.advance_endpoint_config').each(function(index, el){
+            alert(el);
             var ep_config = jQuery.parseJSON($(el).attr('ep-config-data'));
             var name = $(el).attr('field-name');
             var field = name.replace(/\[([0-9]*)\]$/, '');
@@ -632,7 +634,7 @@ $(document).ready(function () {
                 }
             }
             return true;
-        });
+        });*/
 
         //clear undefined urls
         if(ec.production_endpoints instanceof Array && ec.production_endpoints.length == 0){

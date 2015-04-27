@@ -40,7 +40,7 @@ $(function() {
       e.preventDefault();
     });*/
 
-    /*var v = $("#implement_form").validate({
+    var v = $("#implement_form").validate({
         submitHandler: function(form) {        
         var designer = APIDesigner();
         APP.update_ep_config();
@@ -79,7 +79,7 @@ $(function() {
             }, dataType: 'json'
         });
         }
-    });*/
+    });
     
     $("#prototyped_api").click(function(e){
         $("body").on("api_saved", function(e){
