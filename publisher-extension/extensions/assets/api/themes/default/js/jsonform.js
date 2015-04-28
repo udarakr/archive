@@ -346,7 +346,7 @@ jsonform.elementTypes = {
       '<%= (node.schemaElement && node.schemaElement.required && (node.schemaElement.type !== "boolean") ? " required=\'required\'" : "") %>' +
       '<%= (node.placeholder? "placeholder=" + \'"\' + escape(node.placeholder) + \'"\' : "")%>' +
       ' />'+
-      '<button class="btn advance_endpoint_config" type="button" field-name="<%= node.name %>">Advanced Options</button>'+
+      '<button class="btn advance_endpoint_config" ep-config-data="{}" type="button" field-name="<%= node.name %>">Advanced Options</button>'+
       '<button class="btn check_url_valid" type="button" >Test</button>'+
       '</div>' +
       '<p class="help-block">E.g.,: http://appserver/resource</p>',

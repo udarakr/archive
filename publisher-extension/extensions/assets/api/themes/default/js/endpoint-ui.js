@@ -503,14 +503,14 @@ $(document).ready(function () {
     }
     $('#endpoint_type').trigger('change');
 
-    $( "#endpoint_form" ).delegate( ".advance_endpoint_config", "click", function() {
+    $( "#endpoint_form" ).on( "click", ".advance_endpoint_config", function() {
         $('form#advance_form').html('');
 
+        //APP.form.advance_endpoint_config.value = jQuery.parseJSON($(this).attr('ep-config-data'));
         APP.form.advance_endpoint_config.value = jQuery.parseJSON("{}");
         //alert(APP.form.advance_endpoint_config);
         $('form#advance_form').jsonForm(APP.form.advance_endpoint_config);
-
-        /*$('.error_codes_selection').multiselect({
+        $('.error_codes_selection').multiselect({
             buttonText: function(options, select) {
                 if (options.length == 0) {
                     return this.nonSelectedText + ' <b class="caret"></b>';
@@ -530,7 +530,7 @@ $(document).ready(function () {
                     }
                 }
             }
-        });*/
+        });
 
         if($('#endpoint_type').val() == 'address'){
             $(".ae_message_content").show();
@@ -611,12 +611,11 @@ $(document).ready(function () {
     );
 
     APP.update_ep_config = function() {
-        alert("Updating endpoint_config: ");
         var ec = APP.ep_form.getValues();
         ec.endpoint_type = $('#endpoint_type').val();
-        /*$('.advance_endpoint_config').each(function(index, el){
-            alert(el);
-            var ep_config = jQuery.parseJSON($(el).attr('ep-config-data'));
+       $('.advance_endpoint_config').each(function(index, el){
+        console.log($(el).attr('ep-config-data'));
+           var ep_config = jQuery.parseJSON($(el).attr('ep-config-data'));
             var name = $(el).attr('field-name');
             var field = name.replace(/\[([0-9]*)\]$/, '');
             var value_index = name.replace(/([a-zA-Z0-9_]*)/, '').replace('[','').replace(']','');
@@ -634,7 +633,7 @@ $(document).ready(function () {
                 }
             }
             return true;
-        });*/
+        });
 
         //clear undefined urls
         if(ec.production_endpoints instanceof Array && ec.production_endpoints.length == 0){
