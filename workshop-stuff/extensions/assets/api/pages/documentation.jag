@@ -32,7 +32,14 @@
 		var asset = assetManager.get(options.id);
 
 		//print(asset);
-		caramel.render({});
+
+		//page object creation
+
+		var page = require('rxt').ui.buildPage(ctx.session, ctx.request);
+		var output = assetManager.render(asset,page)._custom();
+
+
+		caramel.render(output);
 
 	}, request, response, session);
 %>
