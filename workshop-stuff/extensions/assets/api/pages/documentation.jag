@@ -1,0 +1,38 @@
+<%
+	var caramel;
+	require('/modules/publisher.js').exec(function (ctx){
+
+		//var server = require('store').server;
+		//var user = server.current(ctx.session);
+
+		//print('This is the Documentation page Endpoint');
+		caramel = require('caramel');
+		var pagePattern = '/{context}/asts/{type}/{pageName}/{id}';
+		var uriMatcher = new URIMatcher(ctx.request.getRequestURI());
+		var options;
+
+		//print(Packages.java.lang.System.getProperty(carbon.home));
+		options = uriMatcher.match(pagePattern) || {};
+		//print(options);
+		// {"id" : "12345", "pageName" : "documentation", "context" : "publisher", "type" : "api"}
+
+		/*print(require('store').server.current(ctx.session));
+		{"um" : {"server" : {"url" : "https://www.wso2.org:9443"}, "tenantId" : -1234, "manager" : {}, "authorizer" : {}}, "tenantId" : -1234, "username" : "admin", "tenantDomain" : "carbon.super"}
+		*/
+
+
+		//validate options
+		if(!(options.id) || !(options.type)){
+			ctx.response.sendError(400, " ID or Type missing");
+			return;
+		}!(options.id) 
+
+		//get asset
+		var assetManager = require('rxt').asset.createUserAssetManager(ctx.session, options.type);
+		var asset = assetManager.get(options.id);
+
+		//print(asset);
+		caramel.render({});
+
+	}, request, response, session);
+%>

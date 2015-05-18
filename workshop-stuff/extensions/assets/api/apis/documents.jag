@@ -1,0 +1,7 @@
+<%
+	require('/modules/publisher.js').exec(function (ctx){
+		ctx.response.contentType = 'application/json';
+		print('This is the API Endpoint');
+
+		}, request, response, session);
+%>
