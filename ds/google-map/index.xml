@@ -89,8 +89,17 @@
 				};
 
 				client.search(queryInfo, function(data) {
-						console.log(data["message"]);
-						markers = [[89.09024, -85.712891, 'trialhead0'], [-19.235004, -21.92528, 'trialhead1']];
+						//console.log(data["message"]);
+						markers = [];
+						var result = JSON.parse(data["message"]);
+					
+						for(var j =0; j < result.length; j++){
+							var item = [result[j].values.latitude, result[j].values.longitude, 'trialhead'];
+							markers.push(item);
+							//console.log(JSON.stringify(result[j].values.latitude));
+						}
+						console.log(markers);
+						//markers = [[89.09024, -85.712891, 'trialhead0'], [-19.235004, -21.92528, 'trialhead1']];
 						//trigger update trailheads
 						initialize();
 				}, function(error) {
