@@ -8,73 +8,103 @@
     <UserPref name="username" default_value="udarar@wso2.com"/>
     <Content type="html" view="home">
         <![CDATA[
-<html>
-<head>
-<style>
-	#map_canvas{
-	    width: 100%;
-	    height: 245px;
-	}
-</style>
-</head>
-<body>
-<div>
-<script src="../../../js/jquery-1.10.2.js"></script>
-<script src="js/d3.v3.min.js"></script>
-<script src="js/maps-lib.js"></script>
-<script>
-	var map;
-	var global_markers = [];    
-	var markers = [[37.09024, -95.712891, 'trialhead0'], [-14.235004, -51.92528, 'trialhead1'], [-38.416097, -63.616672, 'trialhead2']];
+		<html>
+		<head>
+		<style>
+			#map_canvas{
+				width: 100%;
+				height: 180px;
+			}
+		</style>
+		<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+		<script src="js/d3.v3.min.js"></script>
+		<script src="http://maps.google.com/maps/api/js?sensor=false&.js"></script>
+		<script src="http://localhost:9763/portal/js/carbon-analytics.js"></script>
+		</head>
+		<body>
+		<div>
 
-	var infowindow = new google.maps.InfoWindow({});
+		<script>
+			var map;
+			var global_markers = [];    
+			var markers = [[37.09024, -95.712891, 'trialhead0'], [-14.235004, -51.92528, 'trialhead1'], [-38.416097, -63.616672, 'trialhead2']];
 
-	function initialize() {
-	    geocoder = new google.maps.Geocoder();
-	    var latlng = new google.maps.LatLng(40.77627, -73.910965);
-	    var myOptions = {
-	        zoom: 1,
-	        center: latlng,
-	        mapTypeId: google.maps.MapTypeId.ROADMAP
-	    }
-	    map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-	    addMarker();
-	}
+			var infowindow = new google.maps.InfoWindow({});
 
-	function addMarker() {
-	    for (var i = 0; i < markers.length; i++) {
-	        // obtain the attribues of each marker
-	        var lat = parseFloat(markers[i][0]);
-	        var lng = parseFloat(markers[i][1]);
-	        var trailhead_name = markers[i][2];
+			function initialize() {
+				geocoder = new google.maps.Geocoder();
+				var latlng = new google.maps.LatLng(40.77627, -73.910965);
+				var myOptions = {
+					zoom: 1,
+					center: latlng,
+					mapTypeId: google.maps.MapTypeId.ROADMAP
+				}
+				map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+				addMarker();
+				//analyticAPI();
+			}
 
-	        var myLatlng = new google.maps.LatLng(lat, lng);
+			function addMarker() {
+				for (var i = 0; i < markers.length; i++) {
+					// obtain the attribues of each marker
+					var lat = parseFloat(markers[i][0]);
+					var lng = parseFloat(markers[i][1]);
+					var trailhead_name = markers[i][2];
 
-	        var contentString = "<html><body><div><p><h2>" + trailhead_name + "</h2></p></div></body></html>";
+					var myLatlng = new google.maps.LatLng(lat, lng);
 
-	        var marker = new google.maps.Marker({
-	            position: myLatlng,
-	            map: map,
-	            title: "Coordinates: " + lat + " , " + lng + " | Trailhead name: " + trailhead_name
-	        });
+					var contentString = "<html><body><div><p><h2>" + trailhead_name + "</h2></p></div></body></html>";
 
-	        marker['infowindow'] = contentString;
+					var marker = new google.maps.Marker({
+					    position: myLatlng,
+					    map: map,
+					    title: "Coordinates: " + lat + " , " + lng + " | Trailhead name: " + trailhead_name
+					});
 
-	        global_markers[i] = marker;
+					marker['infowindow'] = contentString;
 
-	        google.maps.event.addListener(global_markers[i], 'click', function() {
-	            infowindow.setContent(this['infowindow']);
-	            infowindow.open(map, this);
-	        });
-	    }
-	}
+					global_markers[i] = marker;
 
-	window.onload = initialize;
-</script>
-</div>
-<div id="map_canvas"></div>
-</body>
-</html>
+					google.maps.event.addListener(global_markers[i], 'click', function() {
+					    infowindow.setContent(this['infowindow']);
+					    infowindow.open(map, this);
+					});
+				}
+			}
+
+			function analyticAPI(){
+				var client = new AnalyticsClient().init();
+				//default username: admin
+				//default password: admin
+				//server_url : http://localhost:9763/portal/controllers/apis/analytics.jag
+				var client = new AnalyticsClient().init("admin", "admin", "http://localhost:9763/portal/controllers/apis/analytics.jag");
+
+				var queryInfo={
+					tableName:"LOCATION",
+					searchParams : {
+						query:"userId:nimasha",
+						start:0,
+						count:100
+					}
+				};
+
+				client.search(queryInfo, function(data) {
+						console.log(data["message"]);
+						markers = [[89.09024, -85.712891, 'trialhead0'], [-19.235004, -21.92528, 'trialhead1']];
+						//trigger update trailheads
+						initialize();
+				}, function(error) {
+						console.log("error occured: " + error["message"]);  
+				});
+			}
+
+			window.onload = initialize;
+		</script>
+		</div>
+		<div id="map_canvas"></div>
+		<div id="trigger_btn"> <button onclick="analyticAPI()">Run analytic</button> </div>
+		</body>
+		</html>
     ]]>
     </Content>
 </Module>
